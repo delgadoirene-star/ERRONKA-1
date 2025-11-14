@@ -1,0 +1,93 @@
+# .github/workflows/test.yml
+name: PHP Tests & Security
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  DB_HOST: 127.0.0.1
+  DB_PORT: 3306
+  DB_DATABASE: xabala_test
+  DB_USERNAME: root
+  DB_PASSWORD: root
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: ${{ env.DB_DATABASE }}
+          MYSQL_ROOT_PASSWORD: ${{ env.DB_PASSWORD }}
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -uroot -p${{ env.DB_PASSWORD }}"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+        ports:
+          - 3306:3306
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: mysqli, pdo_mysql
+          coverage: none
+
+      - name: Cache Composer deps
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Install dependencies
+        run: |
+          if [ -f composer.json ]; then composer install --no-interaction --no-progress --prefer-dist; fi
+
+      - name: Wait for MySQL to be ready
+        run: |
+          for i in $(seq 1 30); do
+            mysqladmin ping -h"$DB_HOST" -P"$DB_PORT" -u"$DB_USERNAME" -p"$DB_PASSWORD" >/dev/null 2>&1 && break
+            echo "Waiting for MySQL... ($i)"
+            sleep 2
+          done
+
+      - name: Run PHPUnit (if available)
+        run: |
+          if [ -f vendor/bin/phpunit ]; then vendor/bin/phpunit --configuration phpunit.xml || (echo "PHPUnit failed" && exit 1); else echo "No phpunit found, skipping"; fi
+
+      - name: Static analysis with PHPStan (if available)
+        run: |
+          if [ -f vendor/bin/phpstan ]; then vendor/bin/phpstan analyse model/ --level 5 || (echo "PHPStan issues" && exit 1); else echo "No PHPStan found, skipping"; fi
+
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup SSH key
+        uses: webfactory/ssh-agent@v0.5.4
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+
+      - name: Deploy via rsync/ssh
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          rsync -avz --delete --exclude='.git' ./ ${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}

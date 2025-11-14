@@ -1,0 +1,127 @@
+<?php
+class Produktua {
+    private $id;
+    private $izena;
+    private $deskripzioa;
+    private $kategoria;
+    private $prezioa;
+    private $stock;
+    private $stock_minimo;
+
+    public function __construct($izena, $deskripzioa = '', $kategoria = '', $prezioa = 0, $stock = 0) {
+        $this->izena = $izena;
+        $this->deskripzioa = $deskripzioa;
+        $this->kategoria = $kategoria;
+        $this->prezioa = $prezioa;
+        $this->stock = $stock;
+        $this->stock_minimo = 10;
+    }
+
+    // Getters
+    public function getId() { return $this->id; }
+    public function getIzena() { return $this->izena; }
+    public function getDeskripzioa() { return $this->deskripzioa; }
+    public function getKategoria() { return $this->kategoria; }
+    public function getPrezioa() { return $this->prezioa; }
+    public function getStock() { return $this->stock; }
+    public function getStockMinimo() { return $this->stock_minimo; }
+
+    // Setters
+    public function setId($id) { $this->id = $id; }
+    public function setIzena($izena) { $this->izena = $izena; }
+    public function setPrezioa($prezioa) { $this->prezioa = $prezioa; }
+    public function setStock($stock) { $this->stock = $stock; }
+
+    // Sortzea
+    public function sortu($conn) {
+        $sql = "INSERT INTO produktua (izena, deskripzioa, kategoria, prezioa, stock) 
+                VALUES (?, ?, ?, ?, ?)";
+        
+        $stmt = $conn->prepare($sql);
+        if (!$stmt) {
+            return false;
+        }
+        
+        $stmt->bind_param("sssdi", $this->izena, $this->deskripzioa, $this->kategoria, 
+                          $this->prezioa, $this->stock);
+        
+        $emaitza = $stmt->execute();
+        
+        if ($emaitza) {
+            $this->id = $conn->insert_id;
+        }
+        
+        $stmt->close();
+        return $emaitza;
+    }
+
+    // Guztiak lortzea
+    public static function lortuGuztiak($conn) {
+        $sql = "SELECT * FROM produktua WHERE aktibo = TRUE ORDER BY izena ASC";
+        $result = $conn->query($sql);
+        $produktuak = [];
+        
+        if ($result && $result->num_rows > 0) {
+            while($row = $result->fetch_assoc()) {
+                $produktuak[] = $row;
+            }
+        }
+        
+        return $produktuak;
+    }
+
+    // ID bidez bilatzea
+    public static function lortuIdAgatik($conn, $id) {
+        $stmt = $conn->prepare("SELECT * FROM produktua WHERE id=? AND aktibo=TRUE");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows > 0) {
+            return $result->fetch_assoc();
+        }
+        
+        $stmt->close();
+        return null;
+    }
+
+    // Eguneratzea
+    public function eguneratu($conn) {
+        $sql = "UPDATE produktua SET izena=?, deskripzioa=?, kategoria=?, prezioa=?, stock=? WHERE id=?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("sssdii", $this->izena, $this->deskripzioa, $this->kategoria, 
+                          $this->prezioa, $this->stock, $this->id);
+        $emaitza = $stmt->execute();
+        $stmt->close();
+        return $emaitza;
+    }
+
+    // Stocka murriztea salmenta baten ondoren
+    public static function murriztuStocka($conn, $produktu_id, $kantitatea) {
+        $stmt = $conn->prepare("UPDATE produktua SET stock = stock - ? WHERE id=? AND stock >= ?");
+        $stmt->bind_param("iii", $kantitatea, $produktu_id, $kantitatea);
+        $emaitza = $stmt->execute();
+        $stmt->close();
+        return $emaitza;
+    }
+
+    // Desaktibatzea
+    public static function desaktibatu($conn, $id) {
+        $stmt = $conn->prepare("UPDATE produktua SET aktibo=FALSE WHERE id=?");
+        $stmt->bind_param("i", $id);
+        $emaitza = $stmt->execute();
+        $stmt->close();
+        return $emaitza;
+    }
+
+    // Langilea ezabatzea
+    public static function ezabatuLangilea($conn, $id) {
+        // Siempre usar prepared statements, incluso en fallback
+        $stmt = $conn->prepare("DELETE FROM langilea WHERE id = ?");
+        $stmt->bind_param("i", $id);
+        $ok = $stmt->execute();
+        $stmt->close();
+        return $ok;
+    }
+}
+?>

@@ -1,0 +1,19 @@
+# docker-compose.yml (en raíz del proyecto)
+services:
+  web:
+    build: .
+    ports:
+      - "80:80"
+    environment:
+      DB_HOST: db
+    depends_on:
+      - db
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: xabala_db
+      MYSQL_ROOT_PASSWORD: password123
+    volumes:
+      - dbdata:/var/lib/mysql
+volumes:
+  dbdata:

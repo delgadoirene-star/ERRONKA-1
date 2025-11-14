@@ -1,0 +1,10 @@
+# .gitignore (en raíz del proyecto)
+config/konexioa.php
+logs/
+uploads/
+*.log
+.env
+node_modules/
+vendor/
+.DS_Store
+*.tmp
