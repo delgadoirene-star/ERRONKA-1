@@ -7,7 +7,7 @@
     Header set X-Content-Type-Options "nosniff"
     
     # Clickjacking protekzioa
-    Header set X-Frame-Options "SAMEORIGIN"
+    Header always set X-Frame-Options DENY
     
     # Referrer Policy
     Header set Referrer-Policy "strict-origin-when-cross-origin"
@@ -32,4 +32,8 @@
 # mod_rewrite aktibatu
 <IfModule mod_rewrite.c>
     RewriteEngine On
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} !\.(ico|css|js|png|jpg|gif|woff|woff2|ttf|eot|svg)$ [NC]
+    RewriteRule ^(.*)$ router.php [L]
 </IfModule>

@@ -1,11 +1,13 @@
 <?php
-require_once __DIR__ . '/../config/konexioa.php';
+require_once __DIR__ . '/../bootstrap.php';  // Loads global $hashids
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../model/usuario.php';
 require_once __DIR__ . '/../model/langilea.php';
 require_once __DIR__ . '/../model/salmenta.php';
 require_once __DIR__ . '/../model/produktua.php';
 require_once __DIR__ . '/../model/seguritatea.php';
+
+global $hashids;  // Access global Hashids
 
 session_start();
 
@@ -118,6 +120,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
 
 $csrf_token = Seguritatea::generateCSRFToken();
 
+// Generate encoded page names
+$dashboardEncoded = ($hashids !== null) ? $hashids->encode(1) : 'dashboard';
+$langileakEncoded = ($hashids !== null) ? $hashids->encode(2) : 'langileak';
+$produktuakEncoded = ($hashids !== null) ? $hashids->encode(3) : 'produktuak';
+$salmentakEncoded = ($hashids !== null) ? $hashids->encode(4) : 'salmentak';
+$nireSalmentakEncoded = ($hashids !== null) ? $hashids->encode(5) : 'nire_salmentak';
+
 ?>
 <!DOCTYPE html>
 <html lang="eu">
@@ -133,14 +142,12 @@ $csrf_token = Seguritatea::generateCSRFToken();
             <h2>🏭 <?php echo EMPRESA_IZENA; ?></h2>
         </div>
         <div class="navbar-menu">
-            <a href="dashboard.php" class="nav-link">📊 Dashboard</a>
-            <a href="langileak.php" class="nav-link">👥 Langileak</a>
-            <a href="produktuak.php" class="nav-link">📦 Produktuak</a>
-            <a href="salmentak.php" class="nav-link active">💰 Salmentak</a>
-            <a href="nire_salmentak.php" class="nav-link active">📋 Nire salmentak</a>
-            <span class="navbar-user">
-                <?php echo htmlspecialchars($usuario_datos['izena'] . " " . $usuario_datos['abizena']); ?>
-            </span>
+            <a href="<?php echo $dashboardEncoded; ?>.php" class="nav-link">📊 Dashboard</a>
+            <a href="<?php echo $langileakEncoded; ?>.php" class="nav-link">👥 Langileak</a>
+            <a href="<?php echo $produktuakEncoded; ?>.php" class="nav-link">📦 Produktuak</a>
+            <a href="<?php echo $salmentakEncoded; ?>.php" class="nav-link active">💰 Salmentak</a>
+            <a href="<?php echo $nireSalmentakEncoded; ?>.php" class="nav-link">📋 Nire salmentak</a>
+            <a href="<?php echo $profileEncoded; ?>.php" class="nav-link">👤 <?php echo htmlspecialchars($_SESSION['usuario_izena']); ?></a>
             <a href="../logout.php" class="nav-link logout">🚪 Itxi saioa</a>
         </div>
     </div>
@@ -268,7 +275,7 @@ $csrf_token = Seguritatea::generateCSRFToken();
                                 <td><?php echo $salmenta['data_salmenta']; ?></td>
                                 <td>
                                     <?php
-                                    $encodedId = $hashids->encode($salmenta['id']);
+                                    $encodedId = ($hashids !== null) ? $hashids->encode($salmenta['id']) : $salmenta['id'];
                                     echo '<a href="salmenta_detalle.php?ref=' . htmlspecialchars($encodedId) . '">Ikusi</a>';
                                     ?>
                                 </td>

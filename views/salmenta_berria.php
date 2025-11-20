@@ -1,10 +1,13 @@
 <?php
-require_once __DIR__ .  '/../config/konexioa.php';
-require_once __DIR__ .  '/../config/config.php';
-require_once __DIR__ .  '/../model/seguritatea.php';
-require_once __DIR__ .  '/../model/produktua.php';
-require_once __DIR__ .  '/../model/salmenta.php';
-require_once __DIR__ .  '/../model/langilea.php';
+require_once __DIR__ . '/../bootstrap.php';  // Loads global $hashids
+require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../model/usuario.php';
+require_once __DIR__ . '/../model/langilea.php';
+require_once __DIR__ . '/../model/salmenta.php';
+require_once __DIR__ . '/../model/produktua.php';
+require_once __DIR__ . '/../model/seguritatea.php';
+
+global $hashids;  // Access global Hashids
 
 session_start();
 Seguritatea::egiaztaSesioa();
@@ -77,6 +80,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
+
+// Generate encoded page names
+$dashboardEncoded = ($hashids !== null) ? $hashids->encode(1) : 'dashboard';
+$salmentaBerriaEncoded = ($hashids !== null) ? $hashids->encode(7) : 'salmenta_berria';
+$nireSalmentakEncoded = ($hashids !== null) ? $hashids->encode(8) : 'nire_salmentak';
+$profileEncoded = ($hashids !== null) ? $hashids->encode(9) : 'profile';
 ?>
 <!DOCTYPE html>
 <html lang="eu">
@@ -93,10 +102,10 @@ if (empty($_SESSION['csrf_token'])) {
                 <h2>🏭 Xabala</h2>
             </div>
             <ul class="navbar-menu">
-                <li><a href="dashboard.php">Dashboard</a></li>
-                <li><a href="salmenta_berria.php" class="active">Salmenta Berria</a></li>
-                <li><a href="nire_salmentak.php">Nire Salmentak</a></li>
-                <li><a href="profila.php">👤 <?php echo htmlspecialchars($_SESSION['usuario_izena']); ?></a></li>
+                <li><a href="<?php echo $dashboardEncoded; ?>.php">Dashboard</a></li>
+                <li><a href="<?php echo $salmentaBerriaEncoded; ?>.php" class="active">Salmenta Berria</a></li>
+                <li><a href="<?php echo $nireSalmentakEncoded; ?>.php">Nire Salmentak</a></li>
+                <li><a href="<?php echo $profileEncoded; ?>.php">👤 <?php echo htmlspecialchars($_SESSION['usuario_izena']); ?></a></li>
                 <li><a href="./logout.php">Atera</a></li>
             </ul>
         </div>

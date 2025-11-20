@@ -1,14 +1,10 @@
 <?php
-require_once __DIR__ . '/../config/konexioa.php';
+require_once __DIR__ . '/../bootstrap.php';  // Loads global $hashids
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../model/seguritatea.php';
-require_once __DIR__ . '/../model/langilea.php'; 
-require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/../model/langilea.php';
 
-use Hashids\Hashids;
-$hashids = new Hashids('ZAB_IGAI_PLAT_GEN', 8);
-
-session_start();
+global $hashids; 
 
 if (!isset($_SESSION['usuario_id'])) {
     header('Location: ../index.php');
@@ -44,7 +40,9 @@ try {
 
         // Prefer model method if exists
         if (method_exists('Langilea', 'sortu')) {
-            $ok = Langilea::sortu($conn, [
+            // instantiate and call the instance method to avoid non-static call
+            $langilea = new Langilea($izena,$abizena,$nif,$telefono,$depart,$posizioa);
+            $ok = $langilea->sortu($conn, [
                 'izena' => $izena,
                 'abizena' => $abizena,
                 'nif' => $nif,
@@ -112,9 +110,15 @@ try {
 }
 
 if (isset($_GET['ref'])) {
-    $decoded = $hashids->decode($_GET['ref']);
-    $realId = $decoded[0] ?? null;
-    if (!$realId) { header("Location: ../views/dashboard.php"); exit; }
-    // Use $realId instead of $_POST['id'] if needed
+    if ($hashids !== null) {
+        $decoded = $hashids->decode($_GET['ref']);
+        $realId = $decoded[0] ?? null;
+        if (!$realId) { header("Location: ../views/dashboard.php"); exit; }
+        // Use $realId instead of $_POST['id'] if needed
+    } else {
+        error_log('Hashids not available; skipping ref decoding.');
+        header("Location: ../views/dashboard.php");
+        exit;
+    }
 }
 ?>

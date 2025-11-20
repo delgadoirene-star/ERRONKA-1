@@ -1,42 +1,31 @@
 <?php
-
-error_reporting(E_ALL);
-ini_set('display_errors', 0);
-ini_set('log_errors', 1);
-
+// filepath: c:\xampp\htdocs\ariketak\ERRONKA-1_IGAI\ERRONKA-1\controllers/HomeController.php
+ini_set('display_errors', 1);  // Temporary for debugging
+// ... remove after testing ...
 try {
-    require_once __DIR__ . '/../config/konexioa.php';
-    require_once __DIR__ . '/../config/config.php';
+    require_once __DIR__ . '/../bootstrap.php';  // Loads global $hashids
     require_once __DIR__ . '/../model/seguritatea.php';
     require_once __DIR__ . '/../model/usuario.php';
-    require_once __DIR__ . '/../vendor/autoload.php';
 } catch (Exception $e) {
     die("⚠️ Error cargando configuración: " . htmlspecialchars($e->getMessage()));
 }
 
-use Hashids\Hashids;
-$hashids = new Hashids('ZAB_IGAI_PLAT_GEN', 8);
+global $hashids;  // Access global Hashids
 
-// Iniciar sesión temprano
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-    session_regenerate_id(true);
-}
-
-// Si ya tiene sesión activa, redirige al dashboard
+// Redirect if logged in
 if (isset($_SESSION['usuario_id'])) {
     header('Location: views/dashboard.php');
     exit;
 }
 
-// Variables para la vista (generadas antes de render)
+// Variables for view
 $errorea = "";
 $csrf_token = Seguritatea::generateCSRFToken();
 
-// Procesar formulario POST de login
+// Process POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
-        // Verificar CSRF token
+        error_log("Login attempt: email={$_POST['email']}, csrf_token=" . ($_POST['csrf_token'] ?? 'none'));
         if (!Seguritatea::verifyCSRFToken($_POST['csrf_token'] ?? '')) {
             $errorea = "Segurtasun-errorea (CSRF).";
             Seguritatea::logSeguritatea($conn, "CSRF_ATTACK", "index:login", null);
@@ -44,21 +33,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $email = trim($_POST['email'] ?? '');
             $password = $_POST['password'] ?? '';
 
-            // Validar campos vacíos
             if (empty($email) || empty($password)) {
                 $errorea = "Email eta pasahitza bete behar dira.";
-            }
-            // Validar rate limiting
-            elseif (!Seguritatea::egiaztaLoginIntentoa($email)) {
+            } elseif (!Seguritatea::egiaztaLoginIntentoa($email)) {
                 $errorea = "Saioak demasiado gehiak. Itxaron 15 minutu.";
                 Seguritatea::logSeguritatea($conn, "LOGIN_BLOQUEADO", $email, null);
-            }
-            // Autenticar usuario
-            else {
-                $resultado = Seguritatea::egiaztaAutentifikazioa($conn, $email, $password);
+            } else {
+                $resultado = Seguritatea::egiaztautentifikazioa($conn, $email, $password);
+                error_log("Login result: " . print_r($resultado, true));  // Move here
                 
                 if ($resultado) {
-                    // Login exitoso
+                    error_log("Login success for $email");
                     Seguritatea::zuritu_login_intentoak($email);
                     $_SESSION['usuario_id'] = $resultado['id'];
                     $_SESSION['usuario_rol'] = $resultado['rol'];
@@ -69,25 +54,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     header('Location: views/dashboard.php');
                     exit;
                 } else {
-                    // Login fallido
-                    $errorea = "Email edo pasahitz okerra.";
-                    Seguritatea::logSeguritatea($conn, "LOGIN_FALLO", $email, null);
+                    error_log("Login failed for $email: invalid credentials");
+                    $errorea = "Email edo pasahitza okerra.";
+                    Seguritatea::logSeguritatea($conn, "LOGIN_FALLIDO", $email, null);
                 }
             }
         }
     } catch (Throwable $e) {
-        error_log("HomeController POST error: " . $e->getMessage());
+        error_log("Login error: " . $e->getMessage());
         $errorea = "Errorea login-ean. Saiatu berriro.";
     }
 }
 
-// Example: If receiving a ref parameter
+// Handle ref parameter
 $ref = $_GET['ref'] ?? '';
-$decoded = $hashids->decode($ref);
-$realId = $decoded[0] ?? null;
-if (!$realId) { header("Location: dashboard.php"); exit; }
-// Use $realId in queries
+$realId = null;
+if (!empty($ref) && $hashids !== null) {
+    $decoded = $hashids->decode($ref);
+    $realId = $decoded[0] ?? null;
+}
+if (!$realId) {
+    // Optional: Handle invalid ref, e.g., redirect or set default
+}
 
-// Renderizar la vista al final, con $errorea y $csrf_token ya definidos
+// Render view
 require_once __DIR__ . '/../views/home.php';
 ?>

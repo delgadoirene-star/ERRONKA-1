@@ -1,15 +1,11 @@
 <?php
-require_once __DIR__ .  '/../config/konexioa.php';
-require_once __DIR__ .  '/../config/config.php';
-require_once __DIR__ .  '/../model/usuario.php';
-require_once __DIR__ .  '/../model/langilea.php';
-require_once __DIR__ .  '/../model/salmenta.php';
-require_once __DIR__ .  '/../model/produktua.php';
+require_once __DIR__ . '/../bootstrap.php';  // Loads global $hashids
+require_once __DIR__ . '/../model/usuario.php';
+require_once __DIR__ . '/../model/langilea.php';
+require_once __DIR__ . '/../model/salmenta.php';
+require_once __DIR__ . '/../model/produktua.php';
 
-use Hashids\Hashids;
-
-$hashids = new Hashids('ZAB_IGAI_PLAT_GEN', 8);
-session_start();
+global $hashids;  // Access global Hashids
 
 // Autentifikazioa egiaztatzea
 if (!isset($_SESSION['usuario_id'])) {
@@ -40,6 +36,17 @@ $salmenta_guztira = Salmenta::kalkulaSalmentaGuztira($conn);
 $salmentak_azkena = Salmenta::lortuGuztiak($conn);
 $salmentak_azkena = array_slice($salmentak_azkena, 0, 10);
 
+// When generating a referral link, e.g., for sharing or actions
+$id = 123;  // Replace with actual ID
+$ref = ($hashids !== null) ? $hashids->encode($id) : $id;  // Encode if available, else use plain ID
+$url = "http://localhost/views/zabala?ref=" . urlencode($ref);
+
+$dashboardEncoded = ($hashids !== null) ? $hashids->encode(1) : 'dashboard';
+$langileakEncoded = ($hashids !== null) ? $hashids->encode(2) : 'langileak';
+$produktuakEncoded = ($hashids !== null) ? $hashids->encode(3) : 'produktuak';
+$salmentakEncoded = ($hashids !== null) ? $hashids->encode(4) : 'salmentak';
+$nireSalmentakEncoded = ($hashids !== null) ? $hashids->encode(5) : 'nire_salmentak';
+
 ?>
 <!DOCTYPE html>
 <html lang="eu">
@@ -55,11 +62,11 @@ $salmentak_azkena = array_slice($salmentak_azkena, 0, 10);
             <h2>🏭 <?php echo EMPRESA_IZENA; ?></h2>
         </div>
         <div class="navbar-menu">
-            <a href="dashboard.php" class="nav-link active">📊 Dashboard</a>
-            <a href="langileak.php" class="nav-link">👥 Langileak</a>
-            <a href="produktuak.php" class="nav-link">📦 Produktuak</a>
-            <a href="salmentak.php" class="nav-link">💰 Salmentak</a>
-            <a href="nire_salmentak.php" class="nav-link">📋 Nire salmentak</a>
+            <a href="<?php echo $dashboardEncoded; ?>.php" class="nav-link active">📊 Dashboard</a>
+            <a href="<?php echo $langileakEncoded; ?>.php" class="nav-link">👥 Langileak</a>
+            <a href="<?php echo $produktuakEncoded; ?>.php" class="nav-link">📦 Produktuak</a>
+            <a href="<?php echo $salmentakEncoded; ?>.php" class="nav-link">💰 Salmentak</a>
+            <a href="<?php echo $nireSalmentakEncoded; ?>.php" class="nav-link">📋 Nire salmentak</a>
             <span class="navbar-user">
                 <?php echo htmlspecialchars($usuario_datos['izena'] . " " . $usuario_datos['abizena']); ?>
             </span>

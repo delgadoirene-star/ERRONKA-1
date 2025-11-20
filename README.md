@@ -1,3 +1,21 @@
+IMPORTANTE INSTALACCION
+Steps to Import xabala.sql
+Get Container Name:
+
+Run: docker compose ps
+Note the DB container name (e.g., erronka-1_db_1).
+Copy File to Container:
+
+docker cp xabala.sql <container_name>:/tmp/xabala.sql (replace <container_name>).
+Import Inside Container:
+
+docker compose exec db sh -c 'mysql -u root -p"$MYSQL_ROOT_PASSWORD" xabala_db < /tmp/xabala.sql'
+This uses the env var for the password.
+Verify:
+
+docker compose exec db mysql -u root -p xabala_db (enter password: password123)
+Run: SHOW TABLES;
+
 # XABALA Enpresen Plataforma 🏭
 
 Enpresen kudeaketa eta salmentaren sistema PHP-n garatuta.

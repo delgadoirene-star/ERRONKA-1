@@ -94,6 +94,14 @@ class Produktua {
         $emaitza = $stmt->execute();
         $stmt->close();
         return $emaitza;
+    }   
+
+    public static function eguneratuStocka($conn, $produktu_id, $kantitatea) {
+        $sql = "UPDATE produktua SET stock = stock - ? WHERE id = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("ii", $kantitatea, $produktu_id);
+        $stmt->execute();
+        $stmt->close();
     }
 
     // Stocka murriztea salmenta baten ondoren

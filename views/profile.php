@@ -1,3 +1,52 @@
+<?php
+require_once __DIR__ . '/../config/konexioa.php';
+require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../model/usuario.php';
+
+// Load Hashids if available
+$hashids = null;
+$autoload = __DIR__ . '/../vendor/autoload.php';
+if (file_exists($autoload)) {
+    require_once $autoload;
+    if (class_exists('\\Hashids\\Hashids')) {
+        $hashids = new \Hashids\Hashids('ZAB_IGAI_PLAT_GEN', 8);
+    } else {
+        error_log('Hashids class not found in vendor; continuing without Hashids.');
+    }
+} else {
+    error_log('Composer autoload not found; continuing without Hashids.');
+}
+
+// Handle ref parameter
+$ref = $_GET['ref'] ?? '';
+$userId = null;
+if (!empty($ref) && $hashids !== null) {
+    $decoded = $hashids->decode($ref);
+    $userId = $decoded[0] ?? null;
+}
+if (!$userId) {
+    echo 'Invalid user.';
+    exit;
+}
+
+$user = $usuario->getUser();
+
+// Mostrar mensajes
+if (isset($_SESSION['mensaje'])) {
+    echo '<div style="color: green; margin-bottom: 15px; padding: 10px; border: 1px solid green; background: #e6ffe6;">';
+    echo htmlspecialchars($_SESSION['mensaje']);
+    echo '</div>';
+    unset($_SESSION['mensaje']);
+}
+
+if (isset($_SESSION['error'])) {
+    echo '<div style="color: red; margin-bottom: 15px; padding: 10px; border: 1px solid red; background: #ffe6e6;">';
+    echo htmlspecialchars($_SESSION['error']);
+    echo '</div>';
+    unset($_SESSION['error']);
+}
+?>
+
 <script>
 document.addEventListener("DOMContentLoaded", function() {
     if (localStorage.getItem('darkMode') === '1') {
@@ -30,31 +79,6 @@ function openTab(evt, tabName) {
 </div>
 
 <h1>Profila</h1>
-
-<?php
-$hashids = new Hashids('ZAB_IGAI_PLAT_GEN', 8);
-$ref = $_GET['ref'] ?? '';
-$decoded = $hashids->decode($ref);
-$userId = $decoded[0] ?? null;
-if (!$userId) { echo 'Invalid user.'; exit; }
-
-$user = $usuario->getUser();
-
-// Mostrar mensajes
-if (isset($_SESSION['mensaje'])) {
-    echo '<div style="color: green; margin-bottom: 15px; padding: 10px; border: 1px solid green; background: #e6ffe6;">';
-    echo htmlspecialchars($_SESSION['mensaje']);
-    echo '</div>';
-    unset($_SESSION['mensaje']);
-}
-
-if (isset($_SESSION['error'])) {
-    echo '<div style="color: red; margin-bottom: 15px; padding: 10px; border: 1px solid red; background: #ffe6e6;">';
-    echo htmlspecialchars($_SESSION['error']);
-    echo '</div>';
-    unset($_SESSION['error']);
-}
-?>
 
 <!-- Pestañas -->
 <div class="tab" style="display: flex; gap: 8px; margin-bottom: 20px;">

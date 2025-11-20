@@ -1,0 +1,31 @@
+<?php
+require_once __DIR__ . '/bootstrap.php';  // Load config and session
+$hashids = new \Hashids\Hashids('ZAB_IGAI_PLAT_GEN', 8);
+
+$request = $_SERVER['REQUEST_URI'];
+$path = parse_url($request, PHP_URL_PATH);
+$page = basename($path, '.php');
+
+$decoded = $hashids->decode($page);
+if ($decoded && isset($decoded[0])) {
+    $pageId = $decoded[0];
+    $realPage = match($pageId) {
+        1 => 'dashboard',
+        2 => 'langileak',
+        3 => 'produktuak',
+        4 => 'salmentak',
+        5 => 'nire_salmentak',
+        6 => 'profile',
+        7 => 'salmenta_berria',
+        8 => 'langilea_kudeaketa',
+        9 => 'home',
+        default => 'home'
+    };
+    include "views/{$realPage}.php";
+    exit;
+} else {
+    error_log("Invalid page decode: $page");
+    include 'views/home.php';
+    exit;
+}
+?>

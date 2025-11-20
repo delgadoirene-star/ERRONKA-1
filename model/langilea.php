@@ -13,7 +13,7 @@ class Langilea {
     private $foto;
 
     public function __construct($usuario_id, $departamendua = '', $pozisio = '', 
-                                $data_kontratazio = '', $soldata = 0, $telefonoa = '') {
+                            $data_kontratazio = '', $soldata = 0, $telefonoa = '') {
         $this->usuario_id = $usuario_id;
         $this->departamendua = $departamendua;
         $this->pozisio = $pozisio;

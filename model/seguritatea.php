@@ -96,43 +96,18 @@ class Seguritatea {
     }
 
     // ===== AUTENTIFIKAZIOA (RA6) =====
-    public static function egiaztaAutentifikazioa($conn, $email, $password) {
-        try {
-            $sql = "SELECT id, password, rol FROM usuario WHERE email = ? AND aktibo = 1 LIMIT 1";
-            $stmt = $conn->prepare($sql);
-            
-            if (!$stmt) {
-                error_log("SQL Prepare Error: " . $conn->error);
-                return false;
+    public static function egiaztautentifikazioa($conn, $email, $password) {
+        $stmt = $conn->prepare("SELECT id, email, password, rol, aktibo FROM usuario WHERE email = ?");
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($result->num_rows === 1) {
+            $user = $result->fetch_assoc();
+            if (password_verify($password, $user['password']) && $user['aktibo'] == 1) {
+                return $user;
             }
-            
-            $stmt->bind_param("s", $email);
-            
-            if (!$stmt->execute()) {
-                error_log("SQL Execute Error: " . $stmt->error);
-                $stmt->close();
-                return false;
-            }
-            
-            $result = $stmt->get_result();
-            
-            if ($result && $result->num_rows > 0) {
-                $row = $result->fetch_assoc();
-                
-                // Pasahitza egiaztatu
-                if (password_verify($password, $row['password'])) {
-                    $stmt->close();
-                    return $row;
-                }
-            }
-            
-            $stmt->close();
-            return false;
-            
-        } catch (Exception $e) {
-            error_log("Auth Exception: " . $e->getMessage());
-            return false;
         }
+        return false;
     }
 
     // ===== EMAIL EGIAZTAPENA (RA6) =====
@@ -222,10 +197,3 @@ class Seguritatea {
     }
 
 }
-
-// Siempre usar prepared statements, incluso en fallback
-$stmt = $conn->prepare("DELETE FROM langilea WHERE id = ?");
-$stmt->bind_param("i", $id);
-$ok = $stmt->execute();
-$stmt->close();
-?>

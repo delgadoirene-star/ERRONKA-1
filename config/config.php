@@ -1,7 +1,7 @@
 <?php
 /**
  * Xabala enpresaren konfigurazioa
- * filepath: c:\xampp\htdocs\ariketak\ERRONKA-1 (IGAI)\ERRONKA-1\config\config.php
+ * filepath: c:\xampp\htdocs\ariketak\ERRONKA-1_IGAI\ERRONKA-1\config\config.php
  */
 
 // ===== ENPRESEN DATUAK =====
@@ -41,12 +41,6 @@ if (!is_dir(__DIR__ . '/../uploads')) {
     @mkdir(__DIR__ . '/../uploads', 0755, true);
 }
 
-// ===== SESSION KONFIGURAZIOA =====
-ini_set('session.cookie_secure', '0'); // localhost-ean 0
-ini_set('session.cookie_httponly', '1');
-ini_set('session.cookie_samesite', 'Lax');
-ini_set('session.use_strict_mode', '1');
-
 // ===== ERROR REPORTING =====
 error_reporting(E_ALL);
 ini_set('display_errors', '0'); // Produkzioan ez
@@ -54,10 +48,11 @@ ini_set('log_errors', '1');
 ini_set('error_log', ERROR_LOG_FILE);
 
 // ===== SEGURTASUN HEADERS =====
-header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;");
-header("X-Content-Type-Options: nosniff");
-header("X-Frame-Options: DENY");
-header("X-XSS-Protection: 1; mode=block");
-header("Strict-Transport-Security: max-age=31536000; includeSubDomains");
+// Moved to bootstrap or controllers to avoid sending headers before ini_set
+// header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;");
+// header("X-Content-Type-Options: nosniff");
+// header("X-Frame-Options: DENY");
+// header("X-XSS-Protection: 1; mode=block");
+// header("Strict-Transport-Security: max-age=31536000; includeSubDomains");
 
 ?>

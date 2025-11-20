@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../controllers/HomeController.php';
 
 $baseUrl = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 if ($baseUrl === '/' || $baseUrl === '\\') { $baseUrl = ''; }
@@ -190,14 +191,14 @@ $signinPath = $baseUrl . '/signin.php';
                 <input name="password" type="password" required>
             </label>
             <div class="form-actions" style="display: flex; align-items: center; gap: 1rem;">
-                <div class="g-recaptcha" data-sitekey="6LcZkRAsAAAAAB8lGFlpVvgrfBj_QcgiEqqjFbCO"></div>
+                <!--<div class="g-recaptcha" data-sitekey="6LcZkRAsAAAAAB8lGFlpVvgrfBj_QcgiEqqjFbCO"></div>-->
                 <button type="submit" class="btn btn-secondary">Saioa hasi</button>
                 <a class="btn btn-ghost" href="<?php echo htmlspecialchars($signinPath); ?>">Erregistratu</a>
             </div>
         </form>
     </div>
 </div>
-<script src="https://www.google.com/recaptcha/api.js" async defer></script>
+<!--<script src="https://www.google.com/recaptcha/api.js" async defer></script>-->
 <script>
 (function() {
     // Tab system
