@@ -6,6 +6,9 @@ require_once __DIR__ .  '/../model/langilea.php';
 require_once __DIR__ .  '/../model/salmenta.php';
 require_once __DIR__ .  '/../model/produktua.php';
 
+use Hashids\Hashids;
+
+$hashids = new Hashids('ZAB_IGAI_PLAT_GEN', 8);
 session_start();
 
 // Autentifikazioa egiaztatzea

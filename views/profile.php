@@ -32,6 +32,12 @@ function openTab(evt, tabName) {
 <h1>Profila</h1>
 
 <?php
+$hashids = new Hashids('ZAB_IGAI_PLAT_GEN', 8);
+$ref = $_GET['ref'] ?? '';
+$decoded = $hashids->decode($ref);
+$userId = $decoded[0] ?? null;
+if (!$userId) { echo 'Invalid user.'; exit; }
+
 $user = $usuario->getUser();
 
 // Mostrar mensajes

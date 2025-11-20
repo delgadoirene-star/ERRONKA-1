@@ -253,6 +253,7 @@ $csrf_token = Seguritatea::generateCSRFToken();
                             <th>Guztira</th>
                             <th>Bezeroa</th>
                             <th>Data</th>
+                            <th>Ekintza</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -265,6 +266,12 @@ $csrf_token = Seguritatea::generateCSRFToken();
                                 <td><strong><?php echo number_format($salmenta['prezioa_totala'], 2); ?>€</strong></td>
                                 <td><?php echo htmlspecialchars($salmenta['bezeroa_izena'] ?? '-'); ?></td>
                                 <td><?php echo $salmenta['data_salmenta']; ?></td>
+                                <td>
+                                    <?php
+                                    $encodedId = $hashids->encode($salmenta['id']);
+                                    echo '<a href="salmenta_detalle.php?ref=' . htmlspecialchars($encodedId) . '">Ikusi</a>';
+                                    ?>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>

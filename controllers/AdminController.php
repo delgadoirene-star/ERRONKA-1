@@ -2,9 +2,14 @@
 require_once __DIR__ . '/../config/konexioa.php';
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../model/seguritatea.php';
-require_once __DIR__ . '/../model/langilea.php'; // optional: if model provides helpers
+require_once __DIR__ . '/../model/langilea.php'; 
+require_once __DIR__ . '/../vendor/autoload.php';
+
+use Hashids\Hashids;
+$hashids = new Hashids('ZAB_IGAI_PLAT_GEN', 8);
 
 session_start();
+
 if (!isset($_SESSION['usuario_id'])) {
     header('Location: ../index.php');
     exit;
@@ -104,5 +109,12 @@ try {
 } catch (Throwable $e) {
     error_log("AdminController error: " . $e->getMessage());
     redirect_back('Barneko errorea.');
+}
+
+if (isset($_GET['ref'])) {
+    $decoded = $hashids->decode($_GET['ref']);
+    $realId = $decoded[0] ?? null;
+    if (!$realId) { header("Location: ../views/dashboard.php"); exit; }
+    // Use $realId instead of $_POST['id'] if needed
 }
 ?>

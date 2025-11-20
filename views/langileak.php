@@ -4,6 +4,9 @@ require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../model/seguritatea.php';
 require_once __DIR__ . '/../model/langilea.php';
 require_once __DIR__ . '/../model/usuario.php';
+require_once __DIR__ . '/../vendor/autoload.php';
+
+use Hashids\Hashids;
 
 session_start();
 if (empty($_SESSION['usuario_id'])) {
@@ -20,6 +23,7 @@ $usuario_datos = Usuario::lortuIdAgatik($conn, $_SESSION['usuario_id']);
 
 $langileak = Langilea::lortuGuztiak($conn);
 
+$hashids = new Hashids('ZAB_IGAI_PLAT_GEN', 8);
 ?>
 <!DOCTYPE html>
 <html lang="eu">
@@ -110,11 +114,8 @@ $langileak = Langilea::lortuGuztiak($conn);
                                 <td><?php echo htmlspecialchars($langilea['pozisio'] ?? '-'); ?></td>
                                 <td><?php echo number_format($langilea['soldata'] ?? 0, 2); ?>€</td>
                                 <td>
-                                    <form method="POST" action="../controllers/AdminController.php?action=delete" onsubmit="return confirm('Ziur?');" style="display:inline;">
-                                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
-                                        <input type="hidden" name="id" value="<?php echo $langilea['id']; ?>">
-                                        <button type="submit" class="btn btn-danger btn-small">Ezabatu</button>
-                                    </form>
+                                    <a href="langile_edit.php?ref=<?php echo htmlspecialchars($hashids->encode($langilea['id'])); ?>">Editatu</a>
+                                    <a href="langile_delete.php?ref=<?php echo htmlspecialchars($hashids->encode($langilea['id'])); ?>">Ezabatu</a>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

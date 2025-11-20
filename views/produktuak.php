@@ -188,6 +188,10 @@ $csrf_token = Seguritatea::generateCSRFToken();
                                         <input type="hidden" name="produktu_id" value="<?php echo $produktua['id']; ?>">
                                         <button type="submit" class="btn btn-danger btn-small" onclick="return confirm('Ziur zaude?')">Ezabatu</button>
                                     </form>
+                                    <?php
+                                    $encodedId = $hashids->encode($produktua['id']);
+                                    echo '<a href="produktu_edit.php?ref=' . htmlspecialchars($encodedId) . '">Editatu</a>';
+                                    ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
