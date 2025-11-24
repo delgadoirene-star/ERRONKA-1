@@ -19,7 +19,11 @@ if (session_status() === PHP_SESSION_NONE) {
 require_once __DIR__ . '/vendor/autoload.php';
 
 // Load configurations
-require_once __DIR__ . '/config/konexioa.php';
+try {
+    require_once __DIR__ . '/config/konexioa.php';
+} catch (Exception $e) {
+    die("⚠️ Error cargando konexion: " . htmlspecialchars($e->getMessage()));
+}
 require_once __DIR__ . '/config/config.php';
 
 // Initialize Hashids globally if available

@@ -85,3 +85,8 @@ CREATE INDEX idx_salmenta_produktu ON salmenta(produktu_id);
 CREATE INDEX idx_salmenta_data ON salmenta(data_salmenta);
 CREATE INDEX idx_seguritatea_usuario ON seguritatea_loga(usuario_id);
 
+-- Create user and grant permissions
+CREATE USER IF NOT EXISTS 'xabala_user'@'%' IDENTIFIED BY 'xabala_pass';
+GRANT ALL PRIVILEGES ON *.* TO 'xabala_user'@'%';
+FLUSH PRIVILEGES;
+
