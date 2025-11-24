@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/bootstrap.php';  // Load config and session
-$hashids = new \Hashids\Hashids('ZAB_IGAI_PLAT_GEN', 8);
+$hashids = (class_exists('\\Hashids\\Hashids')) ? new \Hashids\Hashids('ZAB_IGAI_PLAT_GEN', 8) : null;
 
 $request = $_SERVER['REQUEST_URI'];
 $path = parse_url($request, PHP_URL_PATH);

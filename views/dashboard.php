@@ -38,7 +38,7 @@ $salmentak_azkena = array_slice($salmentak_azkena, 0, 10);
 
 // When generating a referral link, e.g., for sharing or actions
 $id = 123;  // Replace with actual ID
-$ref = ($hashids !== null) ? $hashids->encode($id) : $id;  // Encode if available, else use plain ID
+$ref = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $hashids->encode($id) : $id;  // Encode if available, else use plain ID
 $url = "http://localhost/views/zabala?ref=" . urlencode($ref);
 
 $dashboardEncoded = ($hashids !== null) ? $hashids->encode(1) : 'dashboard';

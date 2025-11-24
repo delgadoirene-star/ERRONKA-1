@@ -3,7 +3,7 @@ Steps to Import xabala.sql
 Get Container Name:
 
 Run: docker compose ps
-Note the DB container name (e.g., erronka-1_db_1).
+Note the DB container name (e.g., erronka-1_db-1).
 Copy File to Container:
 
 docker cp xabala.sql <container_name>:/tmp/xabala.sql (replace <container_name>).
@@ -52,27 +52,30 @@ Enpresen kudeaketa eta salmentaren sistema PHP-n garatuta.
 
 ## 📦 Instalazioa
 
-### 1. Datu-basea sortzea
+### Docker bidez (gomendatua - ez erabili XAMPP)
+1. `docker compose up --build`
+2. Datu-basea automatikoki sortzen da eta `xabala.sql` inportatzen da.
+3. Web aplikazioa `http://localhost`-n eskuragarri (ez XAMPP erabili).
 
-```bash
-mysql -u root -p < config/xabala.sql
-```
+### Eskuz instalazioa (ez gomendatua)
+1. Datu-basea sortzea
+   ```bash
+   mysql -u root -p < config/xabala.sql
+   ```
 
-### 2. Fitxategien baimenak
+2. Fitxategien baimenak
+   ```bash
+   chmod 755 logs/
+   chmod 755 uploads/
+   ```
 
-```bash
-chmod 755 logs/
-chmod 755 uploads/
-```
-
-### 3. Konfigurazioa
-
-Editatu `config/config.php` zure ezarpenarekin.
+3. Konfigurazioa
+   Editatu `config/config.php` zure ezarpenarekin.
 
 ## 🚀 Erabilea
 
 ### Login
-- **URL**: `http://localhost/ariketak/ERRONKA-1%20(IGAI)/ERRONKA-1/index.php`
+- **URL**: `http://localhost/index.php`
 - Email eta pasahitza sortzea **signin.php** bidez
 
 ### Dashboard

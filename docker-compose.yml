@@ -1,26 +1,37 @@
-# docker-compose.yml (en raíz del proyecto)
+version: "3.9"
+
 services:
   web:
     build: .
     ports:
-      - "80:80"
+      - "80:80"        # mejor evitar usar el 80 del host si XAMPP ya lo usa
     environment:
       DB_HOST: db
+      DB_NAME: xabala_db
+      DB_USER: xabala_user
+      DB_PASS: xabala_pass
     depends_on:
-      - db
+      - db               # espera a que el contenedor arranque (no al healthcheck)
     volumes:
-      - ./config:/var/www/html/config  # Mount config folder
+      - .:/var/www/html  # monta todo el proyecto dentro del contenedor
+    restart: always
+
   db:
     image: mysql:8.0
-    command: --default-authentication-plugin=mysql_native_password
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
       MYSQL_DATABASE: xabala_db
       MYSQL_USER: xabala_user
-      MYSQL_PASSWORD: xabala_pass"
+      MYSQL_PASSWORD: xabala_pass
     volumes:
       - dbdata:/var/lib/mysql
       - ./xabala.sql:/docker-entrypoint-initdb.d/init.sql
-    restart: always  # Added to keep the service running
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-prootpassword"]
+      interval: 15s
+      timeout: 10s
+      retries: 15
+    restart: always
+
 volumes:
   dbdata:

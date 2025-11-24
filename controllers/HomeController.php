@@ -77,6 +77,5 @@ if (!$realId) {
     // Optional: Handle invalid ref, e.g., redirect or set default
 }
 
-// Render view
-require_once __DIR__ . '/../views/home.php';
+// No longer render view here; handled in index.php
 ?>

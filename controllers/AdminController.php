@@ -110,7 +110,7 @@ try {
 }
 
 if (isset($_GET['ref'])) {
-    if ($hashids !== null) {
+    if ($hashids !== null && class_exists('\\Hashids\\Hashids')) {
         $decoded = $hashids->decode($_GET['ref']);
         $realId = $decoded[0] ?? null;
         if (!$realId) { header("Location: ../views/dashboard.php"); exit; }

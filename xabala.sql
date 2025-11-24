@@ -85,8 +85,17 @@ CREATE INDEX idx_salmenta_produktu ON salmenta(produktu_id);
 CREATE INDEX idx_salmenta_data ON salmenta(data_salmenta);
 CREATE INDEX idx_seguritatea_usuario ON seguritatea_loga(usuario_id);
 
--- Create user and grant permissions
+-- Create user and grant permissions (updated for specificity)
 CREATE USER IF NOT EXISTS 'xabala_user'@'%' IDENTIFIED BY 'xabala_pass';
-GRANT ALL PRIVILEGES ON *.* TO 'xabala_user'@'%';
+GRANT ALL PRIVILEGES ON xabala_db.* TO 'xabala_user'@'%';
+FLUSH PRIVILEGES;
+ALTER USER 'xabala_user'@'%' IDENTIFIED BY 'xabala_pass';
 FLUSH PRIVILEGES;
 
+-- Sample data for testing
+INSERT INTO usuario (izena, abizena, nan, email, user, password, rol) VALUES
+('Admin', 'Zabala', '12345678A', 'admin@zabala.eus', 'admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin'),
+('Langilea', 'Test', '87654321B', 'langilea@zabala.eus', 'langilea', '$2y$10$examplehashedpasswordforlangilea', 'langilea');
+
+INSERT INTO langilea (usuario_id, departamendua, pozisio, data_kontratazio, soldata, telefonoa) VALUES
+(2, 'Produkzioa', 'Operario', '2023-01-01', 25000.00, '600000001');

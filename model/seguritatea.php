@@ -11,23 +11,12 @@ class Seguritatea {
     
     // CSRF token sortzea
     public static function generateCSRFToken() {
-        self::hasieratuSesioa();
-        
-        if (empty($_SESSION['csrf_token'])) {
-            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-        }
-        return $_SESSION['csrf_token'];
+        return bin2hex(random_bytes(32));
     }
     
     // CSRF token egiaztatzea
     public static function verifyCSRFToken($token) {
-        self::hasieratuSesioa();
-        
-        if (empty($_SESSION['csrf_token'])) {
-            return false;
-        }
-        
-        return hash_equals($_SESSION['csrf_token'], $token ?? '');
+        return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
     }
 
     // ===== RATE LIMITING - Botaren kontrako (RA6) =====
@@ -70,29 +59,13 @@ class Seguritatea {
 
     // ===== PASAHITZAREN BALIOZTAPENA (RA6) =====
     public static function balioztaPasahitza($password) {
-        $erroak = [];
-        
-        if (strlen($password) < PASSWORD_MIN_LENGTH) {
-            $erroak[] = "Pasahitza " . PASSWORD_MIN_LENGTH . " karaktere gutxienez izan behar du";
-        }
-        
-        if (PASSWORD_REQUIRE_UPPERCASE && !preg_match('/[A-Z]/', $password)) {
-            $erroak[] = "Maiuskulen letra bat behar du (A-Z)";
-        }
-        
-        if (PASSWORD_REQUIRE_LOWERCASE && !preg_match('/[a-z]/', $password)) {
-            $erroak[] = "Minuskulen letra bat behar du (a-z)";
-        }
-        
-        if (PASSWORD_REQUIRE_NUMBERS && !preg_match('/[0-9]/', $password)) {
-            $erroak[] = "Zenbaki bat behar du (0-9)";
-        }
-        
-        if (PASSWORD_REQUIRE_SPECIAL && !preg_match('/[!@#$%^&*(),.?":{}|<>]/', $password)) {
-            $erroak[] = "Karaktere espezial bat behar du (!@#$%^&*)";
-        }
-        
-        return $erroak;
+        $errors = [];
+        if (strlen($password) < PASSWORD_MIN_LENGTH) $errors[] = "Gutxienez " . PASSWORD_MIN_LENGTH . " karaktere.";
+        if (!preg_match('/[A-Z]/', $password)) $errors[] = "Maiuskula bat gutxienez.";
+        if (!preg_match('/[a-z]/', $password)) $errors[] = "Minuskula bat gutxienez.";
+        if (!preg_match('/\d/', $password)) $errors[] = "Zenbaki bat gutxienez.";
+        if (!preg_match('/[^A-Za-z\d]/', $password)) $errors[] = "Karaktere espeziala bat gutxienez.";
+        return $errors;
     }
 
     // ===== AUTENTIFIKAZIOA (RA6) =====
@@ -145,36 +118,11 @@ class Seguritatea {
     }
 
     // ===== LOGGING - SEGURITATEA (RA8) =====
-    public static function logSeguritatea($conn, $evento, $detaleak, $usuario_id = null) {
-        try {
-            $ip_helbidea = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-            $user_agent = substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 255);
-            $data = date('Y-m-d H:i:s');
-            
-            // Datu-basean grabatu
-            $sql = "INSERT INTO segurtasun_log (usuario_id, evento, detaleak, ip_helbidea, user_agent, data) 
-                    VALUES (?, ?, ?, ?, ?, ?)";
-            
-            $stmt = $conn->prepare($sql);
-            if ($stmt) {
-                $stmt->bind_param("isssss", $usuario_id, $evento, $detaleak, $ip_helbidea, $user_agent, $data);
-                $stmt->execute();
-                $stmt->close();
-            }
-            
-            // Txuleton fitxategian ere (backup)
-            $log_file = __DIR__ . '/../logs/security.log';
-            
-            if (!is_dir(__DIR__ . '/../logs')) {
-                mkdir(__DIR__ . '/../logs', 0755, true);
-            }
-            
-            $log_message = "[$data] $evento | Usuario: $usuario_id | IP: $ip_helbidea | Detaleak: $detaleak\n";
-            file_put_contents($log_file, $log_message, FILE_APPEND);
-            
-        } catch (Exception $e) {
-            error_log("Log Exception: " . $e->getMessage());
-        }
+    public static function logSeguritatea($conn, $ekintza, $data, $usuario_id) {
+        $stmt = $conn->prepare("INSERT INTO seguritatea_loga (usuario_id, ekintza, data, ip) VALUES (?, ?, NOW(), ?)");
+        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $stmt->bind_param("iss", $usuario_id, $ekintza, $ip);
+        $stmt->execute();
     }
     
     // Sesioaren egiaztapena

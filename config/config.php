@@ -5,7 +5,7 @@
  */
 
 // ===== ENPRESEN DATUAK =====
-define('EMPRESA_IZENA', 'Zabala Gailetak Enpresaren Plataforma');
+define('EMPRESA_IZENA', 'Xabala Enpresak');
 define('EMPRESA_DESKRIPZIOA', 'Enpresaren kudeaketa eta salmentaren sistema');
 
 // ===== URL KONFIGURAZIOA =====
@@ -22,7 +22,7 @@ define('CSRF_TOKEN_LIFETIME', 3600);
 define('LOGIN_MAX_ATTEMPTS', 5);
 define('LOGIN_ATTEMPT_TIMEOUT', 900);
 define('SESSION_TIMEOUT', 1800);
-define('PASSWORD_MIN_LENGTH', 12);
+define('PASSWORD_MIN_LENGTH', 8);
 define('PASSWORD_REQUIRE_UPPERCASE', true);
 define('PASSWORD_REQUIRE_LOWERCASE', true);
 define('PASSWORD_REQUIRE_NUMBERS', true);

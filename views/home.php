@@ -1,6 +1,4 @@
 <?php
-require_once __DIR__ . '/../controllers/HomeController.php';
-
 $baseUrl = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 if ($baseUrl === '/' || $baseUrl === '\\') { $baseUrl = ''; }
 
@@ -8,6 +6,12 @@ $cssPath    = $baseUrl . '/style/style.css';
 $headerBg   = $baseUrl . '/style/img/galletas.jpg';
 $indexPath  = $baseUrl . '/index.php';
 $signinPath = $baseUrl . '/signin.php';
+
+// Generate CSRF token if not set
+if (!isset($csrf_token)) {
+    require_once __DIR__ . '/../model/seguritatea.php';
+    $csrf_token = Seguritatea::generateCSRFToken();
+}
 ?>
 <!DOCTYPE html>
 <html lang="eu">

@@ -25,11 +25,11 @@ $usuario_datos = Usuario::lortuIdAgatik($conn, $_SESSION['usuario_id']);
 $langileak = Langilea::lortuGuztiak($conn);
 
 // Generate encoded page names
-$dashboardEncoded = ($hashids !== null) ? $hashids->encode(1) : 'dashboard';
-$langileakEncoded = ($hashids !== null) ? $hashids->encode(2) : 'langileak';
-$produktuakEncoded = ($hashids !== null) ? $hashids->encode(3) : 'produktuak';
-$salmentakEncoded = ($hashids !== null) ? $hashids->encode(4) : 'salmentak';
-$nireSalmentakEncoded = ($hashids !== null) ? $hashids->encode(5) : 'nire_salmentak';
+$dashboardEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $hashids->encode(1) : 'dashboard';
+$langileakEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $hashids->encode(2) : 'langileak';
+$produktuakEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $hashids->encode(3) : 'produktuak';
+$salmentakEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $hashids->encode(4) : 'salmentak';
+$nireSalmentakEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $hashids->encode(5) : 'nire_salmentak';
 ?>
 <!DOCTYPE html>
 <html lang="eu">

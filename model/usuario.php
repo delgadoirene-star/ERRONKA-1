@@ -10,6 +10,8 @@ class Usuario {
     private $user;
     private $password;
     private $rol;
+    private $aktibo;
+    private $created_at;
 
     public function __construct($izena, $abizena, $nan, $email, $user, $password, $rol = 'langilea') {
         $this->izena = $izena;
@@ -60,23 +62,11 @@ class Usuario {
 
     // Email edo NANa bidez bilatzea
     public static function lortuEmailEdoNANegatik($conn, $email, $nan) {
-        $stmt = $conn->prepare("SELECT id, password, rol FROM usuario WHERE (email=? OR nan=?) AND aktibo=TRUE");
-        if (!$stmt) {
-            return null;
-        }
-        
+        $stmt = $conn->prepare("SELECT * FROM usuario WHERE email = ? OR nan = ?");
         $stmt->bind_param("ss", $email, $nan);
         $stmt->execute();
         $result = $stmt->get_result();
-        
-        if ($result->num_rows > 0) {
-            $row = $result->fetch_assoc();
-            $stmt->close();
-            return $row;
-        }
-        
-        $stmt->close();
-        return null;
+        return $result->fetch_assoc();
     }
     
     // ID bidez bilatzea
