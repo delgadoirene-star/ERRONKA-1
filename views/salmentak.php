@@ -33,14 +33,13 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
                 'bezeroa_izena'     => trim($_POST['bezeroa_izena'] ?? ''),
                 'bezeroa_nif'       => trim($_POST['bezeroa_nif'] ?? ''),
                 'bezeroa_telefonoa' => trim($_POST['bezeroa_telefonoa'] ?? ''),
-                'oharra'            => trim($_POST['oharra'] ?? '')
+                'oharra'            => '' // textarea kenduta; balioa hutsik
             ];
             if ($d['produktu_id'] && Salmenta::create($conn,$d)) $mezua='Salmenta sortua.';
             else $errorea='Sortze huts.';
         } elseif ($action==='delete') {
             $id=(int)($_POST['id']??0);
             if ($id) {
-                // allow delete if admin or owns (need fetch)
                 $row = Salmenta::find($conn,$id);
                 if ($row && ($isAdmin || (int)$row['langile_id']===$userId) && Salmenta::delete($conn,$id)) $mezua='Ezabatua.';
                 else $errorea='Ezabaketak huts egin du.';
@@ -50,80 +49,83 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
 }
 
 $salmentak = $isAdmin
-    ? Salmenta::lortuGuztiak($conn)                     // joined, includes produktu_izena
-    : Salmenta::lortuGuztiak($conn, $userId);           // joined, filtered by current user
+    ? Salmenta::lortuGuztiak($conn)
+    : Salmenta::lortuGuztiak($conn, $userId);
 
 $produktua = $conn->query("SELECT id, izena FROM produktua ORDER BY izena ASC")->fetch_all(MYSQLI_ASSOC);
-$dashboardLink = function_exists('page_link') ? page_link(1, 'dashboard') : '/views/dashboard.php';
-?>
-<link rel="stylesheet" href="/style/style.css">
-<div class="page-wrapper" style="max-width:1100px;margin:0 auto;padding:20px;">
-    <h2>Salmentak</h2>
-    <?php if($mezua):?><div class="alert alert-success"><?=htmlspecialchars($mezua)?></div><?php endif;?>
-    <?php if($errorea):?><div class="alert alert-error"><?=htmlspecialchars($errorea)?></div><?php endif;?>
 
-    <form method="POST" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">
-        <input type="hidden" name="csrf_token" value="<?=htmlspecialchars($csrf)?>">
+// Header partial (navbar-only navigation)
+$pageTitle = "Salmentak";
+$active = 'salmentak';
+require __DIR__ . '/partials/header.php';
+?>
+<div class="page-header">
+    <h1>💰 Salmentak</h1>
+    <p>Salmenten kudeaketa eta erregistroa</p>
+</div>
+
+<?php if($mezua):?><div class="alert alert-success"><?=htmlspecialchars($mezua)?></div><?php endif;?>
+<?php if($errorea):?><div class="alert alert-error"><?=htmlspecialchars($errorea)?></div><?php endif;?>
+
+<section style="display:grid;grid-template-columns:1fr;gap:16px;margin-bottom:16px;">
+    <form method="POST" class="form" style="display:flex;flex-wrap:wrap;gap:8px;">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
         <input type="hidden" name="action" value="create">
+
         <select name="produktu_id" required>
             <option value="">Produktua...</option>
-            <?php foreach($produktua as $p):?><option value="<?=$p['id']?>"><?=htmlspecialchars($p['izena'])?></option><?php endforeach;?>
+            <?php foreach($produktua as $p): ?>
+                <option value="<?= (int)$p['id'] ?>"><?= htmlspecialchars($p['izena']) ?></option>
+            <?php endforeach; ?>
         </select>
+
         <input name="kantitatea" type="number" value="1" min="1" placeholder="Kantitatea">
         <input name="prezioa_unitarioa" type="number" step="0.01" placeholder="Prezio unitarioa">
         <input name="prezioa_totala" type="number" step="0.01" placeholder="Prezio totala">
-        <input name="data_salmenta" type="date" value="<?=date('Y-m-d')?>">
+        <input name="data_salmenta" type="date" value="<?= date('Y-m-d') ?>">
         <input name="bezeroa_izena" type="text" placeholder="Bezeroa izena">
         <input name="bezeroa_nif" type="text" placeholder="Bezeroa NIF">
         <input name="bezeroa_telefonoa" type="text" placeholder="Bezeroa telefonoa">
-        <textarea name="oharra" placeholder="Oharrak" style="flex:1 1 100%;min-height:72px;"></textarea>
+
         <button type="submit" class="btn btn-primary">Gorde</button>
     </form>
+</section>
 
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>Data</th>
-                <th>Produktua</th>
-                <th>Kantitatea</th>
-                <th>Prezioa</th>
-                <th>Bezeroa</th>
-                <th>Akzioak</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php foreach($salmentak as $s):?>
-            <tr>
-                <td><?=htmlspecialchars($s['data_salmenta'])?></td>
-                <td><?=htmlspecialchars($s['produktu_izena'])?></td>
-                <td class="text-end"><?=htmlspecialchars($s['kantitatea'])?></td>
-                <td class="text-end"><?=htmlspecialchars($s['prezioa_totala'])?></td>
-                <td>
-                    <?=htmlspecialchars($s['bezeroa_izena'])?><br>
-                    <?=htmlspecialchars($s['bezeroa_nif'])?><br>
-                    <?=htmlspecialchars($s['bezeroa_telefonoa'])?>
-                </td>
-                <td>
-                    <form method="POST" style="display:inline;">
-                        <input type="hidden" name="csrf_token" value="<?=htmlspecialchars($csrf)?>">
-                        <input type="hidden" name="action" value="delete">
-                        <input type="hidden" name="id" value="<?=htmlspecialchars($s['id'])?>">
-                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Ezabatu salmenta hau?');">Ezabatu</button>
-                    </form>
-                </td>
-            </tr>
-            <?php endforeach;?>
-        </tbody>
-    </table>
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>Data</th>
+            <th>Produktua</th>
+            <th>Kantitatea</th>
+            <th>Prezioa</th>
+            <th>Bezeroa</th>
+            <th>Akzioak</th>
+        </tr>
+    </thead>
+    <tbody>
+        <?php foreach($salmentak as $s): ?>
+        <tr>
+            <td><?= htmlspecialchars($s['data_salmenta']) ?></td>
+            <td><?= htmlspecialchars($s['produktu_izena']) ?></td>
+            <td class="text-end"><?= htmlspecialchars($s['kantitatea']) ?></td>
+            <td class="text-end"><?= htmlspecialchars($s['prezioa_totala']) ?></td>
+            <td>
+                <?= htmlspecialchars($s['bezeroa_izena']) ?><br>
+                <?= htmlspecialchars($s['bezeroa_nif']) ?><br>
+                <?= htmlspecialchars($s['bezeroa_telefonoa']) ?>
+            </td>
+            <td>
+                <form method="POST" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="id" value="<?= htmlspecialchars($s['id']) ?>">
+                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Ezabatu salmenta hau?');">Ezabatu</button>
+                </form>
+            </td>
+        </tr>
+        <?php endforeach; ?>
+    </tbody>
+</table>
 
-    <div class="card" style="padding:16px;margin-top:16px;">
-        <h2 style="margin:0 0 8px;">Oharra</h2>
-        <p>Nabigazioa goiko menu bidez egiten da.</p>
-    </div>
-
-    <!-- Optional footer actions -->
-    <div style="margin-top:12px;">
-        <a href="<?= htmlspecialchars($dashboardLink) ?>" class="btn btn-secondary">← Dashboard</a>
-    </div>
-</div>
+<?php require __DIR__ . '/partials/footer.php'; ?>
 

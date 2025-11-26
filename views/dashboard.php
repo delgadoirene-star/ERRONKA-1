@@ -58,10 +58,4 @@ require __DIR__ . '/partials/header.php';
     </div>
     <?php endif; ?>
 </div>
-
-<div class="card" style="padding:16px;">
-    <h2 style="margin-top:0;">Oharra</h2>
-    <p>Nabigazioa goiko menu bidez egiten da. Eginbide zehatzetara sartzeko, erabili nabigazio-barra.</p>
-</div>
-
 <?php require __DIR__ . '/partials/footer.php'; ?>
