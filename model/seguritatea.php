@@ -118,10 +118,11 @@ class Seguritatea {
     }
 
     // ===== LOGGING - SEGURITATEA (RA8) =====
-    public static function logSeguritatea($conn, $ekintza, $data, $usuario_id) {
-        $stmt = $conn->prepare("INSERT INTO seguritatea_loga (usuario_id, ekintza, data, ip) VALUES (?, ?, NOW(), ?)");
+    public static function logSeguritatea($conn, $evento, $detaleak, $usuario_id) {
+        $stmt = $conn->prepare("INSERT INTO seguritatea_loga (usuario_id, evento, detaleak, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)");
         $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-        $stmt->bind_param("iss", $usuario_id, $ekintza, $ip);
+        $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+        $stmt->bind_param("issss", $usuario_id, $evento, $detaleak, $ip, $user_agent);
         $stmt->execute();
     }
     
