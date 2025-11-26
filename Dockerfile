@@ -44,6 +44,9 @@ RUN printf "%s\n" "error_reporting = E_ALL" "display_errors = On" "log_errors = 
 # Ensure correct permissions for web server user
 RUN chown -R www-data:www-data /var/www/html
 
+# Trust Traefik so logs show real client IP (Docker network 172.16.0.0/12 is typical)
+RUN printf "RemoteIPHeader X-Forwarded-For\nRemoteIPTrustedProxy 10.0.0.0/8\nRemoteIPTrustedProxy 172.16.0.0/12\nRemoteIPTrustedProxy 192.168.0.0/16\n" > /etc/apache2/conf-enabled/remoteip.conf
+
 EXPOSE 80
 
 # Use wait-for-db helper to avoid race against MySQL. Defaults to starting apache if DB is ready.

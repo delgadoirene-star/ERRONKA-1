@@ -4,7 +4,9 @@
  */
 
 // Session settings before start
-ini_set('session.cookie_secure', !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? '1' : '0');
+$forwardedProto = strtolower($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '');
+$https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $forwardedProto === 'https';
+ini_set('session.cookie_secure', $https ? '1' : '0');
 ini_set('session.cookie_httponly', '1');
 ini_set('session.use_only_cookies', '1');
 ini_set('session.cookie_samesite', 'Lax');

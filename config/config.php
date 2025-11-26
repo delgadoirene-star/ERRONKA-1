@@ -9,7 +9,8 @@ define('EMPRESA_IZENA', 'Xabala Enpresak');
 define('EMPRESA_DESKRIPZIOA', 'Enpresaren kudeaketa eta salmentaren sistema');
 
 // ===== URL KONFIGURAZIOA =====
-$scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$forwardedProto = strtolower($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '');
+$scheme = ($forwardedProto === 'https' || (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')) ? 'https' : 'http';
 $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
 $scriptDir = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/');
 $base = $scriptDir === '' ? '/' : $scriptDir . '/';
