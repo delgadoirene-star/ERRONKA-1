@@ -1,139 +1,132 @@
 <?php
-require_once __DIR__ . '/../bootstrap.php';  // Loads global $hashids
+require_once __DIR__ . '/../bootstrap.php';
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../model/seguritatea.php';
 require_once __DIR__ . '/../model/langilea.php';
 require_once __DIR__ . '/../model/usuario.php';
 
-global $hashids;  // Access global Hashids
+global $db_ok, $conn;
+if (!$db_ok || !$conn) { echo '<div class="alert alert-error">DB ez dago prest.</div>'; return; }
 
-// remove debug
-// echo "Debug: Hashids loaded: " . ($hashids !== null ? 'Yes' : 'No') . "<br>";
+if (empty($_SESSION['usuario_id'])) { redirect_to('/index.php'); }
 
-if (empty($_SESSION['usuario_id'])) {
-    $home = function_exists('page_link') ? page_link(9, 'home') : '/index.php';
-    redirect_to($home);
+$admin = ($_SESSION['usuario_rol'] ?? '') === 'admin';
+
+if (empty($_SESSION['csrf_token'])) { $_SESSION['csrf_token'] = Seguritatea::generateCSRFToken(); }
+$csrf = $_SESSION['csrf_token'];
+
+$mezua=''; $errorea='';
+
+if ($_SERVER['REQUEST_METHOD']==='POST') {
+    $tok = $_POST['csrf_token'] ?? '';
+    if (!Seguritatea::verifyCSRFToken($tok)) {
+        $errorea='CSRF errorea.';
+    } elseif ($admin) {
+        $action = $_POST['action'] ?? '';
+        if ($action==='create') {
+            $data = [
+                'usuario_id'      => (int)($_POST['usuario_id'] ?? 0),
+                'departamendua'   => trim($_POST['departamendua'] ?? ''),
+                'pozisio'         => trim($_POST['pozisio'] ?? ''),
+                'data_kontratazio'=> trim($_POST['data_kontratazio'] ?? ''),
+                'soldata'         => (int)($_POST['soldata'] ?? 0),
+                'telefonoa'       => trim($_POST['telefonoa'] ?? ''),
+                'foto'            => trim($_POST['foto'] ?? '')
+            ];
+            if (!$data['usuario_id']) $errorea='Erabiltzailea behar da.';
+            elseif (Langilea::create($conn,$data)) $mezua='Langilea sortua.';
+            else $errorea='Sortzeak huts egin du.';
+        } elseif ($action==='update') {
+            $id = (int)($_POST['id'] ?? 0);
+            $data = [
+                'departamendua'   => trim($_POST['departamendua'] ?? ''),
+                'pozisio'         => trim($_POST['pozisio'] ?? ''),
+                'data_kontratazio'=> trim($_POST['data_kontratazio'] ?? ''),
+                'soldata'         => (int)($_POST['soldata'] ?? 0),
+                'telefonoa'       => trim($_POST['telefonoa'] ?? ''),
+                'foto'            => trim($_POST['foto'] ?? '')
+            ];
+            if ($id && Langilea::update($conn,$id,$data)) $mezua='Eguneratua.';
+            else $errorea='Eguneratzeak huts egin du.';
+        } elseif ($action==='delete') {
+            $id = (int)($_POST['id'] ?? 0);
+            if ($id && Langilea::delete($conn,$id)) $mezua='Ezabatua.';
+            else $errorea='Ezabaketak huts egin du.';
+        }
+    }
 }
 
-// CSRF only once
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = Seguritatea::generateCSRFToken();
-}
-$csrf_token = $_SESSION['csrf_token'];
-
-$flash_error = $_SESSION['flash_error'] ?? '';
-$flash_success = $_SESSION['flash_success'] ?? '';
-unset($_SESSION['flash_error'], $_SESSION['flash_success']);
-
-$usuario_datos = Usuario::lortuIdAgatik($conn, $_SESSION['usuario_id']);
-$active = 'langileak';
-include __DIR__ . '/partials/navbar.php';
-
-$langileak = Langilea::lortuGuztiak($conn);
-
-// Use page_link helper for navbar and manage link
-$dashboardLink    = function_exists('page_link') ? page_link(1, 'dashboard') : '/dashboard.php';
-$langileakLink    = function_exists('page_link') ? page_link(2, 'langileak') : '/langileak.php';
-$produktuakLink   = function_exists('page_link') ? page_link(3, 'produktuak') : '/produktuak.php';
-$salmentakLink    = function_exists('page_link') ? page_link(4, 'salmentak') : '/salmentak.php';
-$nireSalmentakLink= function_exists('page_link') ? page_link(5, 'nire_salmentak') : '/nire_salmentak.php';
-$profileLink      = function_exists('page_link') ? page_link(6, 'profile') : '/profile.php';
+$langileak = Langilea::all($conn);
+$usuarios = $conn->query("SELECT id, user FROM usuario ORDER BY id DESC")->fetch_all(MYSQLI_ASSOC);
 ?>
-<!DOCTYPE html>
-<html lang="eu">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Langileak - <?php echo EMPRESA_IZENA; ?></title>
-    <link rel="stylesheet" href="../style/style.css">
-</head>
-<body>
-    <div class="container">
-        <h1>👥 Langileak kudeaketa</h1>
+<div class="page-wrapper" style="max-width:1100px;margin:0 auto;padding:20px;">
+    <h2>Langileak</h2>
+    <?php if($mezua):?><div class="alert alert-success"><?=htmlspecialchars($mezua)?></div><?php endif;?>
+    <?php if($errorea):?><div class="alert alert-error"><?=htmlspecialchars($errorea)?></div><?php endif;?>
 
-        <?php if ($flash_error): ?>
-            <div class="alert alert-error"><?php echo htmlspecialchars($flash_error); ?></div>
-        <?php endif; ?>
-        <?php if ($flash_success): ?>
-            <div class="alert alert-success"><?php echo htmlspecialchars($flash_success); ?></div>
-        <?php endif; ?>
+    <?php if($admin):?>
+    <form method="POST" style="margin-bottom:16px;display:flex;flex-wrap:wrap;gap:8px;">
+        <input type="hidden" name="csrf_token" value="<?=htmlspecialchars($csrf)?>">
+        <input type="hidden" name="action" value="create">
+        <select name="usuario_id" required>
+            <option value="">Erabiltzailea...</option>
+            <?php foreach($usuarios as $u):?>
+            <option value="<?=$u['id']?>"><?=htmlspecialchars($u['user'])?></option>
+            <?php endforeach;?>
+        </select>
+        <input name="departamendua" placeholder="Departamendua">
+        <input name="pozisio" placeholder="Pozizioa">
+        <input name="data_kontratazio" type="date">
+        <input name="soldata" type="number" placeholder="Soldata">
+        <input name="telefonoa" placeholder="Telefonoa">
+        <input name="foto" placeholder="Foto URL">
+        <button class="btn">Gehitu</button>
+    </form>
+    <?php endif;?>
 
-        <div class="form-section">
-            <h2>➕ Langilea gehitu</h2>
-            <form method="POST" action="../controllers/AdminController.php?action=add" class="register-form">
-                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Izena</label>
-                        <input type="text" name="izena" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Abizena</label>
-                        <input type="text" name="abizena" required>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group"><label>NAN</label><input type="text" name="nan"></div>
-                    <div class="form-group"><label>Email</label><input type="email" name="email" required></div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group"><label>Telefonoa</label><input type="text" name="telefonoa"></div>
-                    <div class="form-group"><label>Departamendua</label><input type="text" name="departamendua"></div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group"><label>Pozisioa</label><input type="text" name="pozisio"></div>
-                    <div class="form-group"><label>Pasahitza</label><input type="password" name="pasahitza" required></div>
-                </div>
-                <button class="btn btn-primary btn-block" type="submit">Gorde</button>
-            </form>
-        </div>
-
-        <div class="table-section">
-            <h2>Langileak zerrendatua</h2>
-            
-            <?php if (count($langileak) > 0): ?>
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Izena</th>
-                            <th>Abizena</th>
-                            <th>Email</th>
-                            <th>Departamendua</th>
-                            <th>Pozisioa</th>
-                            <th>Soldata</th>
-                            <th>Ekintzak</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($langileak as $langilea): ?>
-                            <tr>
-                                <td><?php echo htmlspecialchars($langilea['izena']); ?></td>
-                                <td><?php echo htmlspecialchars($langilea['abizena']); ?></td>
-                                <td><?php echo htmlspecialchars($langilea['email']); ?></td>
-                                <td><?php echo htmlspecialchars($langilea['departamendua'] ?? '-'); ?></td>
-                                <td><?php echo htmlspecialchars($langilea['pozisio'] ?? '-'); ?></td>
-                                <td><?php echo number_format($langilea['soldata'] ?? 0, 2); ?>€</td>
-                                <?php
-                                $refEnc = function_exists('encode_id') ? encode_id((int)$langilea['id']) : (int)$langilea['id'];
-                                $manageLink = function_exists('page_link') ? page_link(8, 'langilea_kudeaketa') : '/langilea_kudeaketa.php';
-                                ?>
-                                <td>
-                                    <a href="<?php echo htmlspecialchars($manageLink); ?>?ref=<?php echo htmlspecialchars($refEnc); ?>">Editatu</a>
-                                     <form method="POST" action="../controllers/AdminController.php?action=delete" style="display:inline;">
-                                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
-                                        <input type="hidden" name="id" value="<?php echo (int)$langilea['id']; ?>">
-                                        <button class="btn btn-danger btn-sm" onclick="return confirm('Seguru zaude?');">Ezabatu</button>
-                                    </form>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            <?php else: ?>
-                <p class="no-data">Ez dago langilerik.</p>
-            <?php endif; ?>
-        </div>
-    </div>
-</body>
-</html>
+    <table class="table" style="width:100%;border-collapse:collapse;">
+        <thead>
+            <tr>
+                <th>ID</th><th>Erabiltzailea</th><th>Depart.</th><th>Pozisio</th><th>Kontratazio Data</th><th>Soldata</th><th>Telefonoa</th><th></th>
+            </tr>
+        </thead>
+        <tbody>
+        <?php foreach($langileak as $l):?>
+            <tr>
+                <td><?=htmlspecialchars($l['id'])?></td>
+                <td><?=htmlspecialchars($l['usuario_id'])?></td>
+                <td><?=htmlspecialchars($l['departamendua'])?></td>
+                <td><?=htmlspecialchars($l['pozisio'])?></td>
+                <td><?=htmlspecialchars($l['data_kontratazio'])?></td>
+                <td><?=htmlspecialchars($l['soldata'])?></td>
+                <td><?=htmlspecialchars($l['telefonoa'])?></td>
+                <td style="white-space:nowrap;">
+                    <?php if($admin):?>
+                    <form method="POST" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="<?=$csrf?>">
+                        <input type="hidden" name="action" value="delete">
+                        <input type="hidden" name="id" value="<?=$l['id']?>">
+                        <button class="btn btn-danger" onclick="return confirm('Ezabatu?')">✕</button>
+                    </form>
+                    <details style="display:inline;">
+                        <summary class="btn btn-secondary">Edit</summary>
+                        <form method="POST" style="background:#f7f7f7;padding:8px;">
+                            <input type="hidden" name="csrf_token" value="<?=$csrf?>">
+                            <input type="hidden" name="action" value="update">
+                            <input type="hidden" name="id" value="<?=$l['id']?>">
+                            <input name="departamendua" value="<?=htmlspecialchars($l['departamendua'])?>">
+                            <input name="pozisio" value="<?=htmlspecialchars($l['pozisio'])?>">
+                            <input name="data_kontratazio" type="date" value="<?=htmlspecialchars($l['data_kontratazio'])?>">
+                            <input name="soldata" type="number" value="<?=htmlspecialchars($l['soldata'])?>">
+                            <input name="telefonoa" value="<?=htmlspecialchars($l['telefonoa'])?>">
+                            <input name="foto" value="<?=htmlspecialchars($l['foto'])?>">
+                            <button class="btn btn-secondary">Gorde</button>
+                        </form>
+                    </details>
+                    <?php endif;?>
+                </td>
+            </tr>
+        <?php endforeach;?>
+        </tbody>
+    </table>
+</div>

@@ -1,182 +1,69 @@
 <?php
-require_once __DIR__ . '/../bootstrap.php';  // Loads global $hashids
+require_once __DIR__ . '/../bootstrap.php';
 require_once __DIR__ . '/../config/config.php';
-require_once __DIR__ . '/../model/usuario.php';
-require_once __DIR__ . '/../model/langilea.php';
 require_once __DIR__ . '/../model/salmenta.php';
 require_once __DIR__ . '/../model/produktua.php';
 require_once __DIR__ . '/../model/seguritatea.php';
 
-global $hashids;  // Access global Hashids
+global $db_ok, $conn;
+if (!$db_ok || !$conn) { echo '<div class="alert alert-error">DB ez dago prest.</div>'; return; }
+if (empty($_SESSION['usuario_id'])) { redirect_to('/index.php'); }
 
-// Remove session_start(); already started
-Seguritatea::egiaztaSesioa();
+$csrf = $_SESSION['csrf_token'] ?? ($_SESSION['csrf_token']=Seguritatea::generateCSRFToken());
+$mezua=''; $errorea='';
 
-// CSRF token sortzea (only if not set)
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = Seguritatea::generateCSRFToken();
-}
-$csrf_token = $_SESSION['csrf_token'];
-
-$mensajea = "";
-$errorea = "";
-
-// Produktu guztiak lortu
-$produktuak = Produktua::lortuGuztiak($conn);
-
-// Langilearen ID lortu
-$langile_info = null;
-$sql = "SELECT l.id FROM langilea l JOIN usuario u ON l.usuario_id = u.id WHERE u.id = ?";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("i", $_SESSION['usuario_id']);
-$stmt->execute();
-$result = $stmt->get_result();
-$langile_info = $result->fetch_assoc();
-$stmt->close();
-
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
+if ($_SERVER['REQUEST_METHOD']==='POST') {
     if (!Seguritatea::verifyCSRFToken($_POST['csrf_token'] ?? '')) {
-        $errorea = "Segurtasun-errorea (CSRF).";
-        Seguritatea::logSeguritatea($conn, "CSRF_ATTACK", "salmenta_berria:add", $_SESSION['usuario_id'] ?? null);
+        $errorea='CSRF errorea.';
     } else {
-        $produktu_id = intval($_POST['produktu_id'] ?? 0);
-        $kantitatea = intval($_POST['kantitatea'] ?? 0);
-        $bezeroa_izena = trim($_POST['bezeroa_izena'] ?? '');
-        $bezeroa_telefono = trim($_POST['bezeroa_telefono'] ?? '');
-
-        // Balioztapena
-        if ($produktu_id <= 0 || $kantitatea <= 0) {
-            $errorea = "Balioak ez diren zuzenak.";
-        } elseif (empty($bezeroa_izena)) {
-            $errorea = "Bezeroan izena ezin daiteke hutsik egon.";
-        } else {
-            // Produktua lortu
-            $produktua = Produktua::lortuIdAgatik($conn, $produktu_id);
-            
-            if (!$produktua) {
-                $errorea = "Produktua ez da aurkitu.";
-            } elseif ($produktua['stock'] < $kantitatea) {
-                $errorea = "Stock ez da aski. Stock duzue: " . $produktua['stock'];
-            } else {
-                // Salmenta sortzea
-                $salmenta = new Salmenta(
-                    $langile_info['id'],
-                    $produktu_id,
-                    $kantitatea,
-                    $produktua['prezioa'],
-                    $bezeroa_izena,
-                    '',
-                    $bezeroa_telefono
-                );
-                
-                if ($salmenta->sortu($conn)) {
-                    // Stock murriztu modu seguruan (no negative)
-                    if (!Produktua::murriztuStocka($conn, $produktu_id, $kantitatea)) {
-                        $errorea = "Stock eguneratzeak huts egin du.";
-                    } else {
-                        $mensajea = "Salmenta egoki sortu da!";
-                        Seguritatea::logSeguritatea($conn, "SALMENTA_SORTU", "P:$produktu_id Q:$kantitatea", $_SESSION['usuario_id'] ?? null);
-                    }
-                } else {
-                    $errorea = "Errorea salmenta sortzean.";
-                }
-            }
-        }
+        $d = [
+            'langile_id'        => (int)$_SESSION['usuario_id'],
+            'produktu_id'       => (int)($_POST['produktu_id'] ?? 0),
+            'kantitatea'        => (int)($_POST['kantitatea'] ?? 1),
+            'prezioa_unitarioa' => (float)($_POST['prezioa_unitarioa'] ?? 0),
+            'prezioa_totala'    => (float)($_POST['prezioa_totala'] ?? 0),
+            'data_salmenta'     => $_POST['data_salmenta'] ?? date('Y-m-d'),
+            'bezeroa_izena'     => trim($_POST['bezeroa_izena'] ?? ''),
+            'bezeroa_nif'       => trim($_POST['bezeroa_nif'] ?? ''),
+            'bezeroa_telefonoa' => trim($_POST['bezeroa_telefonoa'] ?? ''),
+            'oharra'            => trim($_POST['oharra'] ?? '')
+        ];
+        if ($d['produktu_id'] && Salmenta::create($conn,$d)) $mezua='Salmenta gehituta.';
+        else $errorea='Ezin izan da sortu.';
     }
 }
 
-// Generate encoded page names via helper
-$dashboardLink      = function_exists('page_link') ? page_link(1, 'dashboard') : '/dashboard.php';
-$salmentaBerriaLink = function_exists('page_link') ? page_link(7, 'salmenta_berria') : '/salmenta_berria.php';
-$nireSalmentakLink  = function_exists('page_link') ? page_link(5, 'nire_salmentak') : '/nire_salmentak.php';
-$profileLink        = function_exists('page_link') ? page_link(6, 'profile') : '/profile.php';
-$usuario_datos = Usuario::lortuIdAgatik($conn, $_SESSION['usuario_id']);
-$active = 'salmenta_berria';
-include __DIR__ . '/partials/navbar.php';
+$produktua = $conn->query("SELECT id, izena FROM produktua ORDER BY izena ASC")->fetch_all(MYSQLI_ASSOC);
 ?>
-<!DOCTYPE html>
-<html lang="eu">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Salmenta Berria - Xabala Enpresen Plataforma</title>
-    <link rel="stylesheet" href="../style/style.css">
-</head>
-<body>
-    <div class="container">
-        <div class="page-header">
-            <h1>Salmenta Berria</h1>
-            <p>Erregistratu bezeroarentzat salmenta berria</p>
-        </div>
-
-        <?php if ($mensajea): ?>
-            <div class="alert alert-success">
-                ✓ <?php echo htmlspecialchars($mensajea); ?>
-            </div>
-        <?php endif; ?>
-
-        <?php if ($errorea): ?>
-            <div class="alert alert-error">
-                ✗ <?php echo htmlspecialchars($errorea); ?>
-            </div>
-        <?php endif; ?>
-
-        <div class="card">
-            <form method="POST" class="form">
-                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
-
-                <div class="form-group">
-                    <label for="produktu_id">Produktua*</label>
-                    <select id="produktu_id" name="produktu_id" required onchange="eguneratuPrezioa()">
-                        <option value="">Hautatu produktua...</option>
-                        <?php foreach ($produktuak as $prod): ?>
-                            <option value="<?php echo $prod['id']; ?>" data-prezioa="<?php echo $prod['prezioa']; ?>" data-stock="<?php echo $prod['stock']; ?>">
-                                <?php echo htmlspecialchars($prod['izena']); ?> (Stock: <?php echo $prod['stock']; ?>)
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="kantitatea">Kantitatea*</label>
-                        <input type="number" id="kantitatea" name="kantitatea" min="1" required onchange="eguneratuPrezioa()">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="prezioa_totala">Prezioa totala</label>
-                        <input type="text" id="prezioa_totala" readonly>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="bezeroa_izena">Bezeroan izena*</label>
-                    <input type="text" id="bezeroa_izena" name="bezeroa_izena" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="bezeroa_telefono">Bezeroan telefonoa</label>
-                    <input type="text" id="bezeroa_telefono" name="bezeroa_telefono">
-                </div>
-
-                <button type="submit" class="btn btn-primary">Salmenta Erregistratu</button>
-            </form>
-        </div>
-    </div>
-
-    <script>
-    function eguneratuPrezioa() {
-        const select = document.getElementById('produktu_id');
-        const kantitatea = document.getElementById('kantitatea').value;
-        const prezioa_totala = document.getElementById('prezioa_totala');
-
-        if (select.value && kantitatea) {
-            const option = select.options[select.selectedIndex];
-            const prezioa = parseFloat(option.dataset.prezioa);
-            const total = (prezioa * kantitatea).toFixed(2);
-            prezioa_totala.value = '€' + total;
-        }
-    }
-    </script>
-</body>
-</html>
+<div class="page-wrapper" style="max-width:700px;margin:0 auto;padding:20px;">
+    <h2>Salmenta berria</h2>
+    <?php if($mezua):?><div class="alert alert-success"><?=htmlspecialchars($mezua)?></div><?php endif;?>
+    <?php if($errorea):?><div class="alert alert-error"><?=htmlspecialchars($errorea)?></div><?php endif;?>
+    <form method="POST">
+        <input type="hidden" name="csrf_token" value="<?=htmlspecialchars($csrf)?>">
+        <label>Produktua:</label>
+        <select name="produktu_id" required style="width:100%;margin-bottom:10px;">
+            <option value="">Aukeratu...</option>
+            <?php foreach($produktua as $p):?>
+            <option value="<?=$p['id']?>"><?=htmlspecialchars($p['izena'])?></option>
+            <?php endforeach; ?>
+        </select>
+        <label>Kantitatea:</label>
+        <input type="number" name="kantitatea" value="1" min="1" style="width:100%;margin-bottom:10px;">
+        <label>Prezio unitarioa:</label>
+        <input type="number" step="0.01" name="prezioa_unitarioa" style="width:100%;margin-bottom:10px;">
+        <label>Prezio totala:</label>
+        <input type="number" step="0.01" name="prezioa_totala" style="width:100%;margin-bottom:10px;">
+        <label>Data:</label>
+        <input type="date" name="data_salmenta" value="<?=date('Y-m-d')?>" style="width:100%;margin-bottom:10px;">
+        <label>Bezero izena:</label>
+        <input name="bezeroa_izena" style="width:100%;margin-bottom:10px;">
+        <label>Bezero NIF:</label>
+        <input name="bezeroa_nif" style="width:100%;margin-bottom:10px;">
+        <label>Telefonoa:</label>
+        <input name="bezeroa_telefonoa" style="width:100%;margin-bottom:10px;">
+        <label>Oharra:</label>
+        <textarea name="oharra" style="width:100%;margin-bottom:14px;"></textarea>
+        <button class="btn" style="width:100%;">Gorde</button>
+    </form>
+</div>

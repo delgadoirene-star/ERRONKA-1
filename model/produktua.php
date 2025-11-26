@@ -32,99 +32,32 @@ class Produktua {
     public function setPrezioa($prezioa) { $this->prezioa = $prezioa; }
     public function setStock($stock) { $this->stock = $stock; }
 
-    // Sortzea
-    public function sortu($conn) {
-        $sql = "INSERT INTO produktua (izena, deskripzioa, kategoria, prezioa, stock) 
-                VALUES (?, ?, ?, ?, ?)";
-        
-        $stmt = $conn->prepare($sql);
-        if (!$stmt) {
-            return false;
-        }
-        
-        $stmt->bind_param("sssdi", $this->izena, $this->deskripzioa, $this->kategoria, 
-                          $this->prezioa, $this->stock);
-        
-        $emaitza = $stmt->execute();
-        
-        if ($emaitza) {
-            $this->id = $conn->insert_id;
-        }
-        
-        $stmt->close();
-        return $emaitza;
+    // ====== CRUD static helpers ======
+    public static function all(mysqli $conn): array {
+        $rows = [];
+        $res = $conn->query("SELECT id, izena, deskripzioa, kategoria, prezioa, stock, stock_minimo FROM produktua ORDER BY id DESC");
+        while ($r = $res->fetch_assoc()) { $rows[] = $r; }
+        return $rows;
     }
-
-    // Guztiak lortzea
-    public static function lortuGuztiak($conn) {
-        if (!$conn) return [];
-        $sql = "SELECT * FROM produktua WHERE aktibo = TRUE ORDER BY izena ASC";
-        $result = $conn->query($sql);
-        $produktuak = [];
-        
-        if ($result && $result->num_rows > 0) {
-            while($row = $result->fetch_assoc()) {
-                $produktuak[] = $row;
-            }
-        }
-        
-        return $produktuak;
+    public static function find(mysqli $conn, int $id): ?array {
+        $st = $conn->prepare("SELECT id, izena, deskripzioa, kategoria, prezioa, stock, stock_minimo FROM produktua WHERE id=?");
+        $st->bind_param("i",$id); $st->execute();
+        $r = $st->get_result()->fetch_assoc(); $st->close();
+        return $r ?: null;
     }
-
-    // ID bidez bilatzea
-    public static function lortuIdAgatik($conn, $id) {
-        if (!$conn) return null;
-        $stmt = $conn->prepare("SELECT * FROM produktua WHERE id=? AND aktibo=TRUE");
-        if (!$stmt) return null;
-        $stmt->bind_param("i", $id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-
-        $row = $result->num_rows > 0 ? $result->fetch_assoc() : null;
-        $stmt->close();
-        return $row;
+    public static function create(mysqli $conn, array $d): bool {
+        $st = $conn->prepare("INSERT INTO produktua (izena, deskripzioa, kategoria, prezioa, stock, stock_minimo) VALUES (?,?,?,?,?,?)");
+        $st->bind_param("sssiii",$d['izena'],$d['deskripzioa'],$d['kategoria'],$d['prezioa'],$d['stock'],$d['stock_minimo']);
+        $ok = $st->execute(); $st->close(); return $ok;
     }
-
-    // Eguneratzea
-    public function eguneratu($conn) {
-        if (!$conn) return false;
-        $sql = "UPDATE produktua SET izena=?, deskripzioa=?, kategoria=?, prezioa=?, stock=? WHERE id=?";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("sssdii", $this->izena, $this->deskripzioa, $this->kategoria, 
-                          $this->prezioa, $this->stock, $this->id);
-        $emaitza = $stmt->execute();
-        $stmt->close();
-        return $emaitza;
-    }   
-
-    public static function eguneratuStocka($conn, $produktu_id, $kantitatea) {
-        if (!$conn) return false;
-        $sql = "UPDATE produktua SET stock = stock - ? WHERE id = ?";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("ii", $kantitatea, $produktu_id);
-        $stmt->execute();
-        $stmt->close();
-        return true;
+    public static function update(mysqli $conn, int $id, array $d): bool {
+        $st = $conn->prepare("UPDATE produktua SET izena=?, deskripzioa=?, kategoria=?, prezioa=?, stock=?, stock_minimo=? WHERE id=?");
+        $st->bind_param("sssiiii",$d['izena'],$d['deskripzioa'],$d['kategoria'],$d['prezioa'],$d['stock'],$d['stock_minimo'],$id);
+        $ok = $st->execute(); $st->close(); return $ok;
     }
-
-    // Stocka murriztea salmenta baten ondoren
-    public static function murriztuStocka($conn, $produktu_id, $kantitatea) {
-        if (!$conn) return false;
-        $stmt = $conn->prepare("UPDATE produktua SET stock = stock - ? WHERE id=? AND stock >= ?");
-        $stmt->bind_param("iii", $kantitatea, $produktu_id, $kantitatea);
-        $emaitza = $stmt->execute();
-        $stmt->close();
-        return $emaitza;
-    }
-
-    // Desaktibatzea
-    public static function desaktibatu($conn, $id) {
-        if (!$conn) return false;
-        $stmt = $conn->prepare("UPDATE produktua SET aktibo=FALSE WHERE id=?");
-        $stmt->bind_param("i", $id);
-        $emaitza = $stmt->execute();
-        $stmt->close();
-        return $emaitza;
+    public static function delete(mysqli $conn, int $id): bool {
+        $st = $conn->prepare("DELETE FROM produktua WHERE id=?");
+        $st->bind_param("i",$id); $ok = $st->execute(); $st->close(); return $ok;
     }
 }
 ?>

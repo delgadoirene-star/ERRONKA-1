@@ -4,100 +4,100 @@ require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../model/seguritatea.php';
 require_once __DIR__ . '/../model/langilea.php';
 require_once __DIR__ . '/../model/usuario.php';
+require_once __DIR__ . '/../config/konexioa.php';
 
-$action = $_GET['action'] ?? $_GET['accion'] ?? $_POST['action'] ?? '';
+if (($_SESSION['usuario_rol'] ?? '') !== 'admin') {
+    redirect_to('/index.php');
+    exit;
+}
+
+$action = $_POST['action'] ?? $_GET['action'] ?? '';
 
 function back_with($type, $msg) {
-    // Use page_link() helper (defined in bootstrap) to build a router-safe target
-    $_SESSION["flash_$type"] = $msg;
-    $target = function_exists('page_link') ? page_link(2, 'langileak') : '/langileak.php';
-    // Prefer redirect helper (falls back to JS header if headers already sent)
-    if (function_exists('redirect_to')) {
-        redirect_to($target);
-    } else {
-        header('Location: ' . $target);
-        exit;
-    }
+    $_SESSION['flash_'.$type] = $msg;
+    redirect_to($_SERVER['HTTP_REFERER'] ?? '/index.php');
+}
+
+if (!$db_ok || !$conn) {
+    back_with('error','DB ez dago prest');
+    exit;
+}
+
+$token = $_POST['csrf_token'] ?? '';
+if (!Seguritatea::verifyCSRFToken($token)) {
+    back_with('error','CSRF errorea');
+    exit;
 }
 
 try {
-    if ($action === 'add' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-        if (!Seguritatea::verifyCSRFToken($_POST['csrf_token'] ?? '')) {
-            Seguritatea::logSeguritatea($conn, "CSRF_ATTACK", "admin:add", $_SESSION['usuario_id'] ?? null);
-            back_with('error', 'Segurtasun-errorea (CSRF).');
-        }
+    switch ($action) {
+        case 'delete_langilea':
+            $id = (int)($_POST['id'] ?? 0);
+            $stmt = $conn->prepare("DELETE FROM langilea WHERE id=?");
+            $stmt->bind_param("i",$id);
+            $stmt->execute();
+            $stmt->close();
+            back_with('ok','Langilea ezabatu da');
+            break;
 
-        $izena = trim($_POST['izena'] ?? '');
-        $abizena = trim($_POST['abizena'] ?? '');
-        $nan = trim($_POST['nan'] ?? '');
-        $email = trim($_POST['email'] ?? '');
-        $telefonoa = trim($_POST['telefonoa'] ?? '');
-        $departamendua = trim($_POST['departamendua'] ?? '');
-        $pozisio = trim($_POST['pozisio'] ?? '');
-        $pasahitza = $_POST['pasahitza'] ?? '';
+        case 'edit_langilea':
+            $id = (int)($_POST['id'] ?? 0);
+            $dep = trim($_POST['departamendua'] ?? '');
+            $poz = trim($_POST['pozisio'] ?? '');
+            $tel = trim($_POST['telefonoa'] ?? '');
+            $stmt = $conn->prepare("UPDATE langilea SET departamendua=?, pozisio=?, telefonoa=? WHERE id=?");
+            $stmt->bind_param("sssi",$dep,$poz,$tel,$id);
+            $stmt->execute();
+            $stmt->close();
+            back_with('ok','Langilea eguneratu da');
+            break;
 
-        if (!$izena || !$abizena || !$email || !$pasahitza) {
-            back_with('error', 'Izena, abizena, email eta pasahitza beharrezkoak dira.');
-        }
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            back_with('error', 'Emaila ez da baliogarria.');
-        }
-        if (!Seguritatea::balioztaPasahitza($pasahitza)) {
-            back_with('error', 'Pasahitza ahula da.');
-        }
-        if (Usuario::lortuEmailAgatik($conn, $email)) {
-            back_with('error', 'Emaila dagoeneko existitzen da.');
-        }
+        case 'delete_produktua':
+            $id = (int)($_POST['id'] ?? 0);
+            $stmt = $conn->prepare("DELETE FROM produktua WHERE id=?");
+            $stmt->bind_param("i",$id);
+            $stmt->execute();
+            $stmt->close();
+            back_with('ok','Produktua ezabatu da');
+            break;
 
-        $username = $email; // edo substr($email, 0, strpos($email,'@')) ?: $email;
-        $usuario = new Usuario($izena, $abizena, $nan, $email, $username, $pasahitza);
+        case 'edit_produktua':
+            $id  = (int)($_POST['id'] ?? 0);
+            $iz  = trim($_POST['izena'] ?? '');
+            $kat = trim($_POST['kategoria'] ?? '');
+            $pr  = (float)($_POST['prezioa'] ?? 0);
+            $st  = (int)($_POST['stock'] ?? 0);
+            $stmt = $conn->prepare("UPDATE produktua SET izena=?, kategoria=?, prezioa=?, stock=? WHERE id=?");
+            $stmt->bind_param("ssdii",$iz,$kat,$pr,$st,$id);
+            $stmt->execute();
+            $stmt->close();
+            back_with('ok','Produktua eguneratu da');
+            break;
 
-        $conn->begin_transaction();
-        try {
-            if (!$usuario->sortu($conn)) {
-                throw new Exception('Ezin izan da erabiltzailea sortu.');
-            }
-            $lang = new Langilea($usuario->getId(), $departamendua, $pozisio, null, 0, $telefonoa);
-            if (!$lang->sortu($conn)) {
-                throw new Exception('Ezin izan da langilea sortu.');
-            }
-            $conn->commit();
-        } catch (Throwable $e) {
-            $conn->rollback();
-            throw $e;
-        }
+        case 'delete_salmenta':
+            $id = (int)($_POST['id'] ?? 0);
+            $stmt = $conn->prepare("DELETE FROM salmenta WHERE id=?");
+            $stmt->bind_param("i",$id);
+            $stmt->execute();
+            $stmt->close();
+            back_with('ok','Salmenta ezabatu da');
+            break;
 
-        Seguritatea::logSeguritatea($conn, "LANGILEA_SORTU", "$izena $abizena", $_SESSION['usuario_id'] ?? null);
-        back_with('success', 'Langilea ondo sortu da.');
-    }
+        case 'edit_salmenta':
+            $id   = (int)($_POST['id'] ?? 0);
+            $kant = (int)($_POST['kantitatea'] ?? 0);
+            $unit = (float)($_POST['prezioa_unitarioa'] ?? 0);
+            $ohar = trim($_POST['oharra'] ?? '');
+            $stmt = $conn->prepare("UPDATE salmenta SET kantitatea=?, prezioa_unitarioa=?, oharra=? WHERE id=?");
+            $stmt->bind_param("idsi",$kant,$unit,$ohar,$id);
+            $stmt->execute();
+            $stmt->close();
+            back_with('ok','Salmenta eguneratu da');
+            break;
 
-    if ($action === 'delete') {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            back_with('error', 'Metodoa ez da onartzen.');
-        }
-        if (!Seguritatea::verifyCSRFToken($_POST['csrf_token'] ?? '')) {
-            Seguritatea::logSeguritatea($conn, "CSRF_ATTACK", "admin:delete", $_SESSION['usuario_id'] ?? null);
-            back_with('error', 'Segurtasun-errorea (CSRF).');
-        }
-        $id = intval($_POST['id'] ?? 0);
-        if ($id <= 0) back_with('error', 'ID baliogabea.');
-        if (Langilea::desaktibatu($conn, $id)) {
-            Seguritatea::logSeguritatea($conn, "LANGILEA_EZABATU", "ID: $id", $_SESSION['usuario_id'] ?? null);
-            back_with('success', 'Langilea ezabatuta.');
-        } else {
-            back_with('error', 'Errorea ezabatzean.');
-        }
-    }
-
-    // Default: redirect to langileak page via router helper
-    $default = function_exists('page_link') ? page_link(2, 'langileak') : '/langileak.php';
-    if (function_exists('redirect_to')) {
-        redirect_to($default);
-    } else {
-        header('Location: ' . $default);
-        exit;
+        default:
+            back_with('error','Ekintza ezezaguna');
     }
 } catch (Throwable $e) {
-    error_log("AdminController error: " . $e->getMessage());
-    back_with('error', 'Barneko errorea.');
+    back_with('error','Errorea: '.$e->getMessage());
 }

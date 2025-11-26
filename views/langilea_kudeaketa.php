@@ -5,26 +5,28 @@ require_once __DIR__ . '/../model/seguritatea.php';
 require_once __DIR__ . '/../model/langilea.php';
 require_once __DIR__ . '/../model/usuario.php';
 
-global $hashids;
+global $db_ok, $conn;
+if (!$db_ok || !$conn) { echo '<div class="alert alert-error">DB ez dago prest.</div>'; return; }
 
-// Ensure admin
-if (($_SESSION['usuario_rol'] ?? '') !== 'admin') {
-    $home = function_exists('page_link') ? page_link(9, 'home') : '/index.php';
-    redirect_to($home);
+if (($_SESSION['usuario_rol'] ?? '') !== 'admin') { redirect_to('/index.php'); }
+
+$csrf = $_SESSION['csrf_token'] ?? ($_SESSION['csrf_token']=Seguritatea::generateCSRFToken());
+$mezua=''; $errorea='';
+
+if ($_SERVER['REQUEST_METHOD']==='POST') {
+    if (!Seguritatea::verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+        $errorea='CSRF errorea.';
+    } else {
+        $action = $_POST['action'] ?? '';
+        if ($action==='delete') {
+            $id=(int)($_POST['id']??0);
+            if ($id && Langilea::delete($conn,$id)) $mezua='Ezabatua.';
+            else $errorea='Ezabaketak huts egin du.';
+        }
+    }
 }
 
-// CSRF token
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = Seguritatea::generateCSRFToken();
-}
-$csrf_token = $_SESSION['csrf_token'];
-
-// Load usuario info for navbar/profile display
-$usuario_datos = Usuario::lortuIdAgatik($conn, $_SESSION['usuario_id'] ?? null);
-$active = 'langileak';
-include __DIR__ . '/partials/navbar.php';
-
-$langileak = Langilea::lortuGuztiak($conn);
+$langileak = Langilea::all($conn);
 ?>
 <!DOCTYPE html>
 <html lang="eu">

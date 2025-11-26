@@ -214,5 +214,28 @@ class Salmenta {
         }
         return null;
     }
+
+    public static function all(mysqli $conn): array {
+        $rows=[]; $res=$conn->query("SELECT * FROM salmenta ORDER BY id DESC");
+        while($r=$res->fetch_assoc()){ $rows[]=$r; } return $rows;
+    }
+    public static function find(mysqli $conn,int $id):?array {
+        $st=$conn->prepare("SELECT * FROM salmenta WHERE id=?"); $st->bind_param("i",$id);
+        $st->execute(); $r=$st->get_result()->fetch_assoc(); $st->close(); return $r?:null;
+    }
+    public static function create(mysqli $conn,array $d):bool {
+        $st=$conn->prepare("INSERT INTO salmenta (langile_id, produktu_id, kantitatea, prezioa_unitarioa, prezioa_totala, data_salmenta, bezeroa_izena, bezeroa_nif, bezeroa_telefonoa, oharra) VALUES (?,?,?,?,?,?,?,?,?,?)");
+        $st->bind_param("iiiddsssss",$d['langile_id'],$d['produktu_id'],$d['kantitatea'],$d['prezioa_unitarioa'],$d['prezioa_totala'],$d['data_salmenta'],$d['bezeroa_izena'],$d['bezeroa_nif'],$d['bezeroa_telefonoa'],$d['oharra']);
+        $ok=$st->execute(); $st->close(); return $ok;
+    }
+    public static function update(mysqli $conn,int $id,array $d):bool {
+        $st=$conn->prepare("UPDATE salmenta SET kantitatea=?, prezioa_unitarioa=?, prezioa_totala=?, bezeroa_izena=?, bezeroa_nif=?, bezeroa_telefonoa=?, oharra=? WHERE id=?");
+        $st->bind_param("id dssssi",$d['kantitatea'],$d['prezioa_unitarioa'],$d['prezioa_totala'],$d['bezeroa_izena'],$d['bezeroa_nif'],$d['bezeroa_telefonoa'],$d['oharra'],$id);
+        $ok=$st->execute(); $st->close(); return $ok;
+    }
+    public static function delete(mysqli $conn,int $id):bool {
+        $st=$conn->prepare("DELETE FROM salmenta WHERE id=?"); $st->bind_param("i",$id);
+        $ok=$st->execute(); $st->close(); return $ok;
+    }
 }
 ?>

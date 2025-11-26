@@ -1,7 +1,6 @@
 <?php
 require_once 'seguritatea.php';
 
-// Langilearen modeloa
 class Langilea {
     private $id;
     private $usuario_id;
@@ -37,92 +36,28 @@ class Langilea {
     public function setPozisio($pozisio) { $this->pozisio = $pozisio; }
     public function setSoldata($soldata) { $this->soldata = $soldata; }
 
-    // Langilea sortzea
-    public function sortu($conn) {
-        $sql = "INSERT INTO langilea (usuario_id, departamendua, pozisio, data_kontratazio, soldata, telefonoa, foto) 
-                VALUES (?, ?, ?, ?, ?, ?, ?)";
-        
-        $stmt = $conn->prepare($sql);
-        if (!$stmt) {
-            return false;
-        }
-        
-        $stmt->bind_param("isssiss", $this->usuario_id, $this->departamendua, $this->pozisio, 
-                          $this->data_kontratazio, $this->soldata, $this->telefonoa, $this->foto);
-        
-        $emaitza = $stmt->execute();
-        
-        if ($emaitza) {
-            $this->id = $conn->insert_id;
-        }
-        
-        $stmt->close();
-        return $emaitza;
+    // CRUD
+    public static function all(mysqli $conn): array {
+        $rows=[]; $res=$conn->query("SELECT id, usuario_id, departamendua, pozisio, data_kontratazio, soldata, telefonoa, foto FROM langilea ORDER BY id DESC");
+        while($r=$res->fetch_assoc()){ $rows[]=$r; } return $rows;
     }
-
-    // Guztiak lortu
-    public static function lortuGuztiak($conn) {
-        if (!$conn) return [];
-        $sql = "SELECT l.*, u.izena, u.abizena, u.email, u.nan 
-                FROM langilea l 
-                JOIN usuario u ON l.usuario_id = u.id 
-                WHERE l.aktibo = TRUE 
-                ORDER BY u.izena ASC";
-        
-        $result = $conn->query($sql);
-        $langileak = [];
-        
-        if ($result && $result->num_rows > 0) {
-            while($row = $result->fetch_assoc()) {
-                $langileak[] = $row;
-            }
-        }
-        
-        return $langileak;
+    public static function find(mysqli $conn,int $id):?array {
+        $st=$conn->prepare("SELECT id, usuario_id, departamendua, pozisio, data_kontratazio, soldata, telefonoa, foto FROM langilea WHERE id=?");
+        $st->bind_param("i",$id); $st->execute(); $r=$st->get_result()->fetch_assoc(); $st->close(); return $r?:null;
     }
-
-    // ID bidez lortu
-    public static function lortuIdAgatik($conn, $id) {
-        if (!$conn) return null;
-        $stmt = $conn->prepare("SELECT l.*, u.izena, u.abizena, u.email, u.nan 
-                               FROM langilea l 
-                               JOIN usuario u ON l.usuario_id = u.id 
-                               WHERE l.id=? AND l.aktibo=TRUE");
-        if (!$stmt) return null;
-        $stmt->bind_param("i", $id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $row = $result->num_rows > 0 ? $result->fetch_assoc() : null;
-        $stmt->close();
-        return $row;
+    public static function create(mysqli $conn,array $d):bool {
+        $st=$conn->prepare("INSERT INTO langilea (usuario_id, departamendua, pozisio, data_kontratazio, soldata, telefonoa, foto) VALUES (?,?,?,?,?,?,?)");
+        $st->bind_param("isssiss",$d['usuario_id'],$d['departamendua'],$d['pozisio'],$d['data_kontratazio'],$d['soldata'],$d['telefonoa'],$d['foto']);
+        $ok=$st->execute(); $st->close(); return $ok;
     }
-
-    // Eguneratzea
-    public function eguneratu($conn) {
-        $sql = "UPDATE langilea SET departamendua=?, pozisio=?, soldata=?, telefonoa=? WHERE id=?";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("ssdsi", $this->departamendua, $this->pozisio, $this->soldata, $this->telefonoa, $this->id);
-        $emaitza = $stmt->execute();
-        $stmt->close();
-        return $emaitza;
+    public static function update(mysqli $conn,int $id,array $d):bool {
+        $st=$conn->prepare("UPDATE langilea SET departamendua=?, pozisio=?, data_kontratazio=?, soldata=?, telefonoa=?, foto=? WHERE id=?");
+        $st->bind_param("sssiss i",$d['departamendua'],$d['pozisio'],$d['data_kontratazio'],$d['soldata'],$d['telefonoa'],$d['foto'],$id);
+        $ok=$st->execute(); $st->close(); return $ok;
     }
-
-    // Desaktibatzea
-    public static function desaktibatu($conn, $id) {
-        $stmt = $conn->prepare("UPDATE langilea SET aktibo=FALSE WHERE id=?");
-        $stmt->bind_param("i", $id);
-        $emaitza = $stmt->execute();
-        $stmt->close();
-        return $emaitza;
-    }
-
-    // Ezabatzea
-    public static function ezabatu($conn, $id) {
-        $stmt = $conn->prepare("DELETE FROM langilea WHERE id = ?");
-        $stmt->bind_param("i", $id);
-        $ok = $stmt->execute();
-        $stmt->close();
-        return $ok;
+    public static function delete(mysqli $conn,int $id):bool {
+        $st=$conn->prepare("DELETE FROM langilea WHERE id=?"); $st->bind_param("i",$id);
+        $ok=$st->execute(); $st->close(); return $ok;
     }
 }
 ?>

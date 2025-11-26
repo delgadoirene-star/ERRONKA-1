@@ -1,57 +1,30 @@
 <?php
-require_once __DIR__ . '/../bootstrap.php';  // Loads global $hashids
+require_once __DIR__ . '/../bootstrap.php';
 require_once __DIR__ . '/../config/config.php';
-require_once __DIR__ . '/../model/usuario.php';
-require_once __DIR__ . '/../model/langilea.php';
 require_once __DIR__ . '/../model/salmenta.php';
-require_once __DIR__ . '/../model/produktua.php';
 require_once __DIR__ . '/../model/seguritatea.php';
 
-global $hashids;  // Access global Hashids
+global $db_ok, $conn;
+if (!$db_ok || !$conn) { echo '<div class="alert alert-error">DB ez dago prest.</div>'; return; }
+if (empty($_SESSION['usuario_id'])) { redirect_to('/index.php'); }
 
-// Autentifikazioa egiaztatzea
-if (!isset($_SESSION['usuario_id'])) {
-    $home = function_exists('page_link') ? page_link(9, 'home') : '/index.php';
-    redirect_to($home);
+$userId = (int)$_SESSION['usuario_id'];
+$csrf = $_SESSION['csrf_token'] ?? ($_SESSION['csrf_token']=Seguritatea::generateCSRFToken());
+$mezua=''; $errorea='';
+
+if ($_SERVER['REQUEST_METHOD']==='POST') {
+    if (!Seguritatea::verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+        $errorea='CSRF errorea.';
+    } elseif ($_POST['action'] ?? ''==='delete') {
+        $id=(int)($_POST['id']??0);
+        $row = $id ? Salmenta::find($conn,$id) : null;
+        if ($row && (int)$row['langile_id']===$userId && Salmenta::delete($conn,$id)) $mezua='Ezabatua.';
+        else $errorea='Ezabaketak huts egin du.';
+    }
 }
 
-// Erabiltzailearen datuak lortzea
-$usuario_datos = Usuario::lortuIdAgatik($conn, $_SESSION['usuario_id']);
-$active = 'nire_salmentak';
-include __DIR__ . '/partials/navbar.php';
-
-// Langilearen ID lortu
-$langile_info = null;
-$sql = "SELECT l.id FROM langilea l JOIN usuario u ON l.usuario_id = u.id WHERE u.id = ?";
-$stmt = $conn->prepare($sql);
-if ($stmt) {
-    $stmt->bind_param("i", $_SESSION['usuario_id']);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $langile_info = $result->fetch_assoc();
-    $stmt->close();
-}
-
-// Langilearen salmentak
-$salmentak = [];
-if ($langile_info) {
-    $salmentak = Salmenta::lortuGuztiak($conn, $langile_info['id']);
-}
-
-// Salmentak guztira
-$salmenta_guztira = 0;
-foreach ($salmentak as $salmenta) {
-    $salmenta_guztira += $salmenta['prezioa_totala'];
-}
-
-// Generate router-safe links
-$dashboardLink    = function_exists('page_link') ? page_link(1, 'dashboard') : '/dashboard.php';
-$langileakLink    = function_exists('page_link') ? page_link(2, 'langileak') : '/langileak.php';
-$produktuakLink   = function_exists('page_link') ? page_link(3, 'produktuak') : '/produktuak.php';
-$salmentakLink    = function_exists('page_link') ? page_link(4, 'salmentak') : '/salmentak.php';
-$nireSalmentakLink= function_exists('page_link') ? page_link(5, 'nire_salmentak') : '/nire_salmentak.php';
-$profileLink      = function_exists('page_link') ? page_link(6, 'profile') : '/profile.php';
-
+$all = Salmenta::all($conn);
+$mine = array_filter($all, fn($r)=> (int)$r['langile_id']===$userId);
 ?>
 <!DOCTYPE html>
 <html lang="eu">
