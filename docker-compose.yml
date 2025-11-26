@@ -11,8 +11,7 @@ services:
       DB_USER: xabala_user
       DB_PASS: xabala_pass
     depends_on:
-      db:
-        condition: service_healthy
+      - db
     volumes:
       - .:/var/www/html
     restart: always
@@ -26,9 +25,4 @@ services:
       MYSQL_PASSWORD: xabala_pass
     volumes:
       - ./xabala.sql:/docker-entrypoint-initdb.d/init.sql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-prootpass"]
-      interval: 5s
-      timeout: 5s
-      retries: 15
     restart: always
