@@ -16,9 +16,18 @@ require_once __DIR__ . '/vendor/autoload.php';
 require_once __DIR__ . '/model/seguritatea.php';
 Seguritatea::hasieratuSesioa();
 
-// Load config and DB (ensure config is loaded first so constants exist even if DB is down)
+// Load config first (defines constants used by views) then attempt DB connection
 require_once __DIR__ . '/config/config.php';
-require_once __DIR__ . '/config/konexioa.php';
+
+// Attempt to load DB connection but never let a thrown exception stop bootstrap.
+// konexioa.php will normally initialize $conn or set it to null on failure.
+try {
+    require_once __DIR__ . '/config/konexioa.php';
+} catch (\Throwable $e) {
+    error_log("bootstrap: konexioa.php failed: " . $e->getMessage());
+    // Ensure $conn exists so downstream code can check and degrade gracefully
+    $conn = $conn ?? null;
+}
 
 // Initialize Hashids globally if available
 global $hashids;
