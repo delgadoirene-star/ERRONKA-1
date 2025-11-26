@@ -16,9 +16,9 @@ require_once __DIR__ . '/vendor/autoload.php';
 require_once __DIR__ . '/model/seguritatea.php';
 Seguritatea::hasieratuSesioa();
 
-// Load DB and config
-require_once __DIR__ . '/config/konexioa.php';
+// Load config and DB (ensure config is loaded first so constants exist even if DB is down)
 require_once __DIR__ . '/config/config.php';
+require_once __DIR__ . '/config/konexioa.php';
 
 // Initialize Hashids globally if available
 global $hashids;
