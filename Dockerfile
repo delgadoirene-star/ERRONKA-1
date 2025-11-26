@@ -47,4 +47,4 @@ RUN chown -R www-data:www-data /var/www/html
 EXPOSE 80
 
 # Use wait-for-db helper to avoid race against MySQL. Defaults to starting apache if DB is ready.
-CMD ["/bin/bash", "/usr/local/bin/wait-for-db.sh", "apache2-foreground"]
+CMD ["apache2-foreground"]
