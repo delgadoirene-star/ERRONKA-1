@@ -1,26 +1,18 @@
 <?php
 // Ensure bootstrap is loaded so session/CSRF helper is available
 require_once __DIR__ . '/../bootstrap.php';
-require_once __DIR__ . '/../config/konexioa.php';
-
 $baseUrl = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 if ($baseUrl === '/' || $baseUrl === '\\') { $baseUrl = ''; }
-$cssPath = $baseUrl . '/style/style.css';
 
-global $db_ok, $conn;
+$cssPath    = $baseUrl . '/style/style.css';
+$headerBg   = $baseUrl . '/style/img/galletas.jpg';
+$indexPath  = $baseUrl . '/index.php';
+$signinPath = $baseUrl . '/signin.php';
 
-$produktuCount = null;
-$sampleProduktuak = [];
-if ($db_ok && $conn) {
-    try {
-        $r = $conn->query("SELECT COUNT(*) c FROM produktua");
-        $produktuCount = $r ? ($r->fetch_assoc()['c'] ?? 0) : 0;
-        $r2 = $conn->query("SELECT izena FROM produktua ORDER BY id DESC LIMIT 5");
-        while ($r2 && ($row = $r2->fetch_assoc())) { $sampleProduktuak[] = $row['izena']; }
-    } catch (Throwable $e) {
-        error_log("Home produktuak query error: ".$e->getMessage());
-    }
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = Seguritatea::generateCSRFToken();
 }
+$csrf_token = $_SESSION['csrf_token'];
 ?>
 <!DOCTYPE html>
 <html lang="eu">
@@ -177,71 +169,6 @@ if (empty($db_ok)) {
                 </div>
             </div>
         </div>
-    </div>
-
-    <div class="page-wrapper" style="max-width:900px;margin:0 auto;padding:30px;text-align:center;">
-        <h1>Zabala Gailetak</h1>
-        <p style="font-size:1.1em;">
-            Zabala Gailetak artisau <strong>gaileta</strong> ekoizlea da: kalitatezko osagai lokalak,
-            errezeta tradizionalak eta berrikuntza (glutenik gabe, vegan, azukre gutxiko aukerak).
-        </p>
-
-        <?php if(!$db_ok):?>
-            <div class="alert alert-error" style="margin:20px 0;">DB ez dago prest. Saiatu geroago.</div>
-        <?php endif;?>
-
-        <div style="display:flex;flex-wrap:wrap;gap:18px;justify-content:center;margin:30px 0;">
-            <div class="card" style="flex:1;min-width:220px;">
-                <h3>Helburua</h3>
-                <p>Gozoa + osasuntsua + jasangarria.</p>
-            </div>
-            <div class="card" style="flex:1;min-width:220px;">
-                <h3>Balioak</h3>
-                <p>Tokikoa · Gardentasuna · Zero xahutzea</p>
-            </div>
-            <div class="card" style="flex:1;min-width:220px;">
-                <h3>Segmentuak</h3>
-                <p>Txokolatea · Oloa · Fruitu lehorrak · Vegan · Denboraldiko</p>
-            </div>
-            <div class="card" style="flex:1;min-width:220px;">
-                <h3>Produktu kopurua</h3>
-                <p><?= $produktuCount!==null ? (int)$produktuCount : '—' ?></p>
-            </div>
-        </div>
-
-        <?php if($produktuCount && $sampleProduktuak):?>
-            <div class="card" style="margin-bottom:30px;">
-                <h3>Azken produktuak</h3>
-                <ul style="list-style:none;padding:0;margin:10px 0;">
-                    <?php foreach($sampleProduktuak as $p):?>
-                        <li>🍪 <?= htmlspecialchars($p) ?></li>
-                    <?php endforeach;?>
-                </ul>
-            </div>
-        <?php endif;?>
-
-        <div class="card" style="margin-bottom:30px;">
-            <h3>Jasangarritasuna</h3>
-            <p>
-                Ontzi birziklagarriak, energia berriztagarria eta hornitzaile etikoak.
-                Ekoizpen prozesuan ur eta energia kontsumoa optimizatua.
-            </p>
-        </div>
-
-        <div class="card" style="margin-bottom:30px;">
-            <h3>Kontaktua</h3>
-            <p>Email: info@zabalagailetak.eus · Tel: +34 600 000 000 · Donostia</p>
-        </div>
-
-        <?php if(!empty($_SESSION['usuario_id'])):?>
-            <a class="btn" href="dashboard.php">Dashboard</a>
-            <a class="btn btn-secondary" href="profile.php">Profila</a>
-            <form method="POST" action="logout.php" style="display:inline;">
-                <button class="btn btn-danger">Logout</button>
-            </form>
-        <?php else:?>
-            <a class="btn" href="signin.php">Saioa hasi</a>
-        <?php endif;?>
     </div>
 </main>
 <footer class="site-footer">
