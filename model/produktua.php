@@ -57,6 +57,7 @@ class Produktua {
 
     // Guztiak lortzea
     public static function lortuGuztiak($conn) {
+        if (!$conn) return [];
         $sql = "SELECT * FROM produktua WHERE aktibo = TRUE ORDER BY izena ASC";
         $result = $conn->query($sql);
         $produktuak = [];
@@ -72,7 +73,9 @@ class Produktua {
 
     // ID bidez bilatzea
     public static function lortuIdAgatik($conn, $id) {
+        if (!$conn) return null;
         $stmt = $conn->prepare("SELECT * FROM produktua WHERE id=? AND aktibo=TRUE");
+        if (!$stmt) return null;
         $stmt->bind_param("i", $id);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -84,6 +87,7 @@ class Produktua {
 
     // Eguneratzea
     public function eguneratu($conn) {
+        if (!$conn) return false;
         $sql = "UPDATE produktua SET izena=?, deskripzioa=?, kategoria=?, prezioa=?, stock=? WHERE id=?";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("sssdii", $this->izena, $this->deskripzioa, $this->kategoria, 
@@ -94,15 +98,18 @@ class Produktua {
     }   
 
     public static function eguneratuStocka($conn, $produktu_id, $kantitatea) {
+        if (!$conn) return false;
         $sql = "UPDATE produktua SET stock = stock - ? WHERE id = ?";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("ii", $kantitatea, $produktu_id);
         $stmt->execute();
         $stmt->close();
+        return true;
     }
 
     // Stocka murriztea salmenta baten ondoren
     public static function murriztuStocka($conn, $produktu_id, $kantitatea) {
+        if (!$conn) return false;
         $stmt = $conn->prepare("UPDATE produktua SET stock = stock - ? WHERE id=? AND stock >= ?");
         $stmt->bind_param("iii", $kantitatea, $produktu_id, $kantitatea);
         $emaitza = $stmt->execute();
@@ -112,6 +119,7 @@ class Produktua {
 
     // Desaktibatzea
     public static function desaktibatu($conn, $id) {
+        if (!$conn) return false;
         $stmt = $conn->prepare("UPDATE produktua SET aktibo=FALSE WHERE id=?");
         $stmt->bind_param("i", $id);
         $emaitza = $stmt->execute();

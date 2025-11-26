@@ -62,6 +62,7 @@ class Langilea {
 
     // Guztiak lortu
     public static function lortuGuztiak($conn) {
+        if (!$conn) return [];
         $sql = "SELECT l.*, u.izena, u.abizena, u.email, u.nan 
                 FROM langilea l 
                 JOIN usuario u ON l.usuario_id = u.id 
@@ -82,10 +83,12 @@ class Langilea {
 
     // ID bidez lortu
     public static function lortuIdAgatik($conn, $id) {
+        if (!$conn) return null;
         $stmt = $conn->prepare("SELECT l.*, u.izena, u.abizena, u.email, u.nan 
                                FROM langilea l 
                                JOIN usuario u ON l.usuario_id = u.id 
                                WHERE l.id=? AND l.aktibo=TRUE");
+        if (!$stmt) return null;
         $stmt->bind_param("i", $id);
         $stmt->execute();
         $result = $stmt->get_result();

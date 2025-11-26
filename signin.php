@@ -17,7 +17,17 @@ if (empty($_SESSION['csrf_token'])) {
 }
 $csrf_token = $_SESSION['csrf_token'];
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+// If DB not ready, show a helpful message and skip DB operations
+global $db_ok;
+if (empty($db_ok)) {
+    // On POST, avoid attempting DB calls (prevent fatal errors)
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        error_log("Signin attempt blocked: DB not available");
+        $errorea = "Datu-basea momentuz ez dago eskuragarri. Saiatu berriro minuto batzuen buruan.";
+    }
+} 
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($db_ok)) {
     $postedToken = $_POST['csrf_token'] ?? '';
     $email = trim($_POST['email'] ?? '');
     $izena = trim($_POST['izena'] ?? '');

@@ -20,7 +20,7 @@ Seguritatea::hasieratuSesioa();
 require_once __DIR__ . '/config/config.php';
 
 // Attempt to load DB connection but never let a thrown exception stop bootstrap.
-// konexioa.php will normally initialize $conn or set it to null on failure.
+// konexioa.php will normally initialize $conn or set it to null on failure
 try {
     require_once __DIR__ . '/config/konexioa.php';
 } catch (\Throwable $e) {
@@ -28,6 +28,10 @@ try {
     // Ensure $conn exists so downstream code can check and degrade gracefully
     $conn = $conn ?? null;
 }
+
+// Expose a simple boolean flag for DB availability to views/controllers
+global $db_ok;
+$db_ok = (isset($conn) && $conn !== null);
 
 // Initialize Hashids globally if available
 global $hashids;

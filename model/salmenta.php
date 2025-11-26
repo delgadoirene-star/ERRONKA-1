@@ -47,15 +47,19 @@ class Salmenta {
 
     // Sortzea
     public function sortu($conn) {
-        $sql = "INSERT INTO salmenta (langile_id, produktu_id, kantitatea, prezioa_unitarioa, 
-                prezioa_totala, data_salmenta, bezeroa_izena, bezeroa_nif, bezeroa_telefonoa, oharra) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        
-        $stmt = $conn->prepare($sql);
-        if (!$stmt) {
-            error_log("Salmenta prepare Error: " . $conn->error);
-            return false;
-        }
+		if (!$conn) {
+			error_log("Salmenta::sortu called without DB connection");
+			return false;
+		}
+		$sql = "INSERT INTO salmenta (langile_id, produktu_id, kantitatea, prezioa_unitarioa, 
+				prezioa_totala, data_salmenta, bezeroa_izena, bezeroa_nif, bezeroa_telefonoa, oharra) 
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+		
+		$stmt = $conn->prepare($sql);
+		if (!$stmt) {
+			error_log("Salmenta prepare Error: " . $conn->error);
+			return false;
+		}
         
         // TIPOS CORRECTOS: 3 ints, 2 doubles, 5 strings = "iiiddsssss"
         $stmt->bind_param(
@@ -84,6 +88,7 @@ class Salmenta {
 
     // Guztiak lortu
     public static function lortuGuztiak($conn, $langile_id = null) {
+		if (!$conn) return [];
         if ($langile_id) {
             $sql = "SELECT s.*, l.usuario_id, u.izena, u.abizena, p.izena as produktu_izena, p.kategoria 
                     FROM salmenta s 
@@ -122,6 +127,7 @@ class Salmenta {
 
     // Data tarte batean salmentak
     public static function lortuDataTarteAn($conn, $data_hasiera, $data_bukaera) {
+		if (!$conn) return [];
         $sql = "SELECT s.*, u.izena, u.abizena, p.izena as produktu_izena 
                 FROM salmenta s 
                 JOIN langilea l ON s.langile_id = l.id
@@ -148,6 +154,7 @@ class Salmenta {
 
     // Salmentaren guztira kalkulatzea
     public static function kalkulaSalmentaGuztira($conn, $langile_id = null) {
+		if (!$conn) return 0;
         if ($langile_id) {
             $sql = "SELECT SUM(prezioa_totala) as guztira FROM salmenta WHERE langile_id = ?";
             $stmt = $conn->prepare($sql);
@@ -167,6 +174,7 @@ class Salmenta {
 
     // Eguneratzea
     public function eguneratu($conn) {
+		if (!$conn) return false;
         $sql = "UPDATE salmenta SET kantitatea=?, prezioa_unitarioa=?, prezioa_totala=?, 
                 bezeroa_izena=?, bezeroa_nif=?, bezeroa_telefonoa=?, oharra=? WHERE id=?";
         $stmt = $conn->prepare($sql);
@@ -180,6 +188,7 @@ class Salmenta {
 
     // Ezabatzea
     public static function ezabatu($conn, $id) {
+		if (!$conn) return false;
         // Correct deletion target (salmenta), not langilea
         $stmt = $conn->prepare("DELETE FROM salmenta WHERE id = ?");
         $stmt->bind_param("i", $id);
@@ -190,6 +199,7 @@ class Salmenta {
 
     // Estatistikak
     public static function lortuStatistikak($conn) {
+		if (!$conn) return null;
         $sql = "SELECT 
                 COUNT(*) as salmenta_totala,
                 SUM(prezioa_totala) as diru_totala,

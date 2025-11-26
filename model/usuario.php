@@ -40,6 +40,10 @@ class Usuario {
 
     // Sortzea
     public function sortu($conn) {
+        if (!$conn) {
+            error_log("Usuario::sortu called without DB connection");
+            return false;
+        }
         $hash = password_hash($this->password, PASSWORD_DEFAULT);
         $stmt = $conn->prepare("INSERT INTO usuario (izena, abizena, nan, email, user, password, rol, aktibo) VALUES (?,?,?,?,?,?,?,1)");
         $stmt->bind_param("sssssss", $this->izena, $this->abizena, $this->nan, $this->email, $this->user, $hash, $this->rol);
@@ -53,19 +57,22 @@ class Usuario {
 
     // Email edo NANa bidez bilatzea
     public static function lortuEmailEdoNANegatik($conn, $email, $nan): ?array {
+        if (!$conn) return null;
         $stmt = $conn->prepare("SELECT * FROM usuario WHERE email = ? OR nan = ?");
         if (!$stmt) return null;
         $stmt->bind_param("ss", $email, $nan);
         $stmt->execute();
         $result = $stmt->get_result();
         $row = $result->fetch_assoc() ?: null;
-        $stmt->close(); // ensure closure
+        $stmt->close();
         return $row;
     }
     
     // ID bidez bilatzea
     public static function lortuIdAgatik($conn, $id) {
+        if (!$conn) return null;
         $stmt = $conn->prepare("SELECT * FROM usuario WHERE id = ?");
+        if (!$stmt) return null;
         $stmt->bind_param("i", $id);
         $stmt->execute();
         $res = $stmt->get_result();
@@ -74,8 +81,11 @@ class Usuario {
         return $row ?: null;
     }
 
-    public static function lortuEmailAgatik(mysqli $conn, string $email): ?array {
+    // NOTE: removed strict mysqli type to avoid TypeError when $conn is null
+    public static function lortuEmailAgatik($conn, string $email): ?array {
+        if (!$conn) return null;
         $stmt = $conn->prepare("SELECT * FROM usuario WHERE email = ?");
+        if (!$stmt) return null;
         $stmt->bind_param("s", $email);
         $stmt->execute();
         $res = $stmt->get_result();
@@ -86,6 +96,7 @@ class Usuario {
 
     // Pasahitza aldatzea
     public function aldatuPasahitza($conn, $pasahitz_berria) {
+        if (!$conn) return false;
         $hash = password_hash($pasahitz_berria, PASSWORD_DEFAULT);
         $stmt = $conn->prepare("UPDATE usuario SET password=? WHERE id=?");
         $stmt->bind_param("si", $hash, $this->id);

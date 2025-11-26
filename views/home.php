@@ -23,6 +23,15 @@ $csrf_token = $_SESSION['csrf_token'];
     <link rel="stylesheet" href="<?php echo htmlspecialchars($cssPath); ?>">
 </head>
 <body class="home-page">
+<?php
+// Show DB status notice if DB is not available (graceful message)
+global $db_ok;
+if (empty($db_ok)) {
+    echo '<div class="alert alert-warning" style="text-align:center; padding:8px; margin:0;">' .
+         'Datu-basea momentuz ez dago eskuragarri — webgunearen parte bat desgaituta egon daiteke. Saiatu berriro gutxienez minuturen baten buruan.' .
+         '</div>';
+}
+?>
 <!-- HERO BANNER (Full width image) -->
 <section class="hero-banner" style="background-image: url('<?php echo htmlspecialchars($headerBg); ?>');">
     <div class="hero-overlay"></div>

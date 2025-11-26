@@ -75,7 +75,11 @@ class Seguritatea {
 
     // ===== AUTENTIFIKAZIOA (RA6) =====
     public static function egiaztautentifikazioa($conn, $email, $password) {
+        if (!$conn) {
+            return false;
+        }
         $stmt = $conn->prepare("SELECT id, email, password, rol, aktibo FROM usuario WHERE email = ?");
+        if (!$stmt) return false;
         $stmt->bind_param("s", $email);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -123,11 +127,20 @@ class Seguritatea {
     }
 
     // ===== LOGGING - SEGURITATEA (RA8) =====
-    public static function logSeguritatea(mysqli $conn, string $evento, string $detaleak, ?int $usuarioId = null): void {
+    public static function logSeguritatea($conn, string $evento, string $detaleak, ?int $usuarioId = null): void {
         try {
             $ip = $_SERVER['REMOTE_ADDR'] ?? '';
             $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
+            if (!$conn) {
+                // DB missing: fallback to file log
+                error_log("Seguritatea log (no DB): {$evento} - {$detaleak} - user: {$usuarioId} - ip: {$ip} - ua: {$ua}");
+                return;
+            }
             $stmt = $conn->prepare("INSERT INTO seguritatea_loga (usuario_id, evento, detaleak, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)");
+            if (!$stmt) {
+                error_log("Seguritatea log prepare error: " . $conn->error);
+                return;
+            }
             $stmt->bind_param("issss", $usuarioId, $evento, $detaleak, $ip, $ua);
             $stmt->execute();
             $stmt->close();
