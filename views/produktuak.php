@@ -52,6 +52,7 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
 
 $produktuak = Produktua::all($conn);
 ?>
+<link rel="stylesheet" href="/style/style.css">
 <div class="page-wrapper" style="max-width:1000px;margin:0 auto;padding:20px;">
     <h2>Produktuak</h2>
     <?php if($mezua):?><div class="alert alert-success"><?=htmlspecialchars($mezua)?></div><?php endif;?>

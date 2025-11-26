@@ -79,6 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $user = Usuario::lortuIdAgatik($conn, $userId) ?: [];
 
 ?>
+<link rel="stylesheet" href="/style/style.css">
 <div class="page-wrapper" style="max-width:900px;margin:0 auto;padding:20px;">
     <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:12px;">
         <form method="POST">

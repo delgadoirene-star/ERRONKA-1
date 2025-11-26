@@ -35,6 +35,7 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
 
 $produktua = $conn->query("SELECT id, izena FROM produktua ORDER BY izena ASC")->fetch_all(MYSQLI_ASSOC);
 ?>
+<link rel="stylesheet" href="/style/style.css">
 <div class="page-wrapper" style="max-width:700px;margin:0 auto;padding:20px;">
     <h2>Salmenta berria</h2>
     <?php if($mezua):?><div class="alert alert-success"><?=htmlspecialchars($mezua)?></div><?php endif;?>

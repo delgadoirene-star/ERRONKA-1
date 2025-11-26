@@ -55,6 +55,7 @@ $salmentak = $isAdmin
 
 $produktua = $conn->query("SELECT id, izena FROM produktua ORDER BY izena ASC")->fetch_all(MYSQLI_ASSOC);
 ?>
+<link rel="stylesheet" href="/style/style.css">
 <div class="page-wrapper" style="max-width:1100px;margin:0 auto;padding:20px;">
     <h2>Salmentak</h2>
     <?php if($mezua):?><div class="alert alert-success"><?=htmlspecialchars($mezua)?></div><?php endif;?>
@@ -70,5 +71,44 @@ $produktua = $conn->query("SELECT id, izena FROM produktua ORDER BY izena ASC")-
         <input name="kantitatea" type="number" value="1" min="1">
         <input name="prezioa_unitarioa" type="number" step="0.01" placeholder="Unitarioa">
         <input name="prezioa_totala" type="number" step="0.01" placeholder="Totala">
-        <input name="data_salmenta" type="date" value="<?=date('Y-m-d')?>"
+        <input name="data_salmenta" type="date" value="<?=date('Y-m-d')?>">
+        <input name="bezeroa_izena" type="text" placeholder="Bezeroa izena">
+        <input name="bezeroa_nif" type="text" placeholder="Bezeroa NIF">
+        <input name="bezeroa_telefonoa" type="text" placeholder="Bezeroa telefonoa">
+        <textarea name="oharra" placeholder="Oharrak"></textarea>
+        <button type="submit" class="btn btn-primary">Gorde</button>
+    </form>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Data</th>
+                <th>Produktua</th>
+                <th>Kantitatea</th>
+                <th>Prezioa</th>
+                <th>Bezeroa</th>
+                <th>Akzioak</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach($salmentak as $s):?>
+            <tr>
+                <td><?=htmlspecialchars($s['data_salmenta'])?></td>
+                <td><?=htmlspecialchars($s['produktu_izena'])?></td>
+                <td class="text-end"><?=htmlspecialchars($s['kantitatea'])?></td>
+                <td class="text-end"><?=htmlspecialchars($s['prezioa_totala'])?></td>
+                <td><?=htmlspecialchars($s['bezeroa_izena'])?><br><?=htmlspecialchars($s['bezeroa_nif'])?><br><?=htmlspecialchars($s['bezeroa_telefonoa'])?></td>
+                <td>
+                    <form method="POST" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="<?=htmlspecialchars($csrf)?>">
+                        <input type="hidden" name="action" value="delete">
+                        <input type="hidden" name="id" value="<?=htmlspecialchars($s['id'])?>">
+                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Ezabatu salmenta hau?');">Ezabatu</button>
+                    </form>
+                </td>
+            </tr>
+            <?php endforeach;?>
+        </tbody>
+    </table>
+</div>
 

@@ -16,6 +16,7 @@ $totalProduktu = $conn->query("SELECT COUNT(*) c FROM produktua")->fetch_assoc()
 $totalSalmenta = $conn->query("SELECT COUNT(*) c FROM salmenta")->fetch_assoc()['c'] ?? 0;
 $nireSalmenta  = $conn->query("SELECT COUNT(*) c FROM salmenta WHERE langile_id=".$userId)->fetch_assoc()['c'] ?? 0;
 ?>
+<link rel="stylesheet" href="/style/style.css">
 <div class="page-wrapper" style="max-width:1100px;margin:0 auto;padding:20px;">
     <h2>Dashboard</h2>
     <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:24px;">

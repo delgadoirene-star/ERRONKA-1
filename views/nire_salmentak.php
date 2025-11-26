@@ -25,6 +25,17 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
 
 $all = Salmenta::all($conn);
 $mine = array_filter($all, fn($r)=> (int)$r['langile_id']===$userId);
+
+// Add missing navbar link variables and absolute CSS path
+$cssHref           = "/style/style.css";
+$dashboardLink     = function_exists('page_link') ? page_link(1, 'dashboard') : '/views/dashboard.php';
+$langileakLink     = function_exists('page_link') ? page_link(2, 'langileak') : '/views/langileak.php';
+$produktuakLink    = function_exists('page_link') ? page_link(3, 'produktuak') : '/views/produktuak.php';
+$salmentakLink     = function_exists('page_link') ? page_link(4, 'salmentak') : '/views/salmentak.php';
+$nireSalmentakLink = function_exists('page_link') ? page_link(5, 'nire_salmentak') : '/views/nire_salmentak.php';
+
+// Optional: current user display
+$usuario_datos = class_exists('Usuario') && isset($conn) ? (Usuario::lortuIdAgatik($conn, $userId) ?: ['izena'=>'','abizena'=>'']) : ['izena'=>'','abizena'=>''];
 ?>
 <!DOCTYPE html>
 <html lang="eu">
@@ -32,23 +43,23 @@ $mine = array_filter($all, fn($r)=> (int)$r['langile_id']===$userId);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nire Salmentak - <?php echo EMPRESA_IZENA; ?></title>
-    <link rel="stylesheet" href="../style/style.css">
+    <link rel="stylesheet" href="<?= htmlspecialchars($cssHref) ?>">
 </head>
 <body>
     <div class="navbar">
         <div class="navbar-brand">
-            <h2>🏭 <?php echo EMPRESA_IZENA; ?></h2>
+            <h2>🏭 <?= htmlspecialchars(EMPRESA_IZENA) ?></h2>
         </div>
         <div class="navbar-menu">
-            <a href="<?php echo htmlspecialchars($dashboardLink); ?>" class="nav-link">📊 Dashboard</a>
-            <a href="<?php echo htmlspecialchars($langileakLink); ?>" class="nav-link">👥 Langileak</a>
-            <a href="<?php echo htmlspecialchars($produktuakLink); ?>" class="nav-link">📦 Produktuak</a>
-            <a href="<?php echo htmlspecialchars($salmentakLink); ?>" class="nav-link">💰 Salmentak</a>
-            <a href="<?php echo htmlspecialchars($nireSalmentakLink); ?>" class="nav-link active">📋 Nire salmentak</a>
+            <a href="<?= htmlspecialchars($dashboardLink) ?>" class="nav-link">📊 Dashboard</a>
+            <a href="<?= htmlspecialchars($langileakLink) ?>" class="nav-link">👥 Langileak</a>
+            <a href="<?= htmlspecialchars($produktuakLink) ?>" class="nav-link">📦 Produktuak</a>
+            <a href="<?= htmlspecialchars($salmentakLink) ?>" class="nav-link">💰 Salmentak</a>
+            <a href="<?= htmlspecialchars($nireSalmentakLink) ?>" class="nav-link active">📋 Nire salmentak</a>
             <span class="navbar-user">
-                <?php echo htmlspecialchars($usuario_datos['izena'] . " " . $usuario_datos['abizena']); ?>
+                <?= htmlspecialchars(trim(($usuario_datos['izena'] ?? '') . ' ' . ($usuario_datos['abizena'] ?? ''))) ?>
             </span>
-            <a href="../logout.php" class="nav-link logout">🚪 Itxi saioa</a>
+            <a href="/logout.php" class="nav-link logout">🚪 Itxi saioa</a>
         </div>
     </div>
 
