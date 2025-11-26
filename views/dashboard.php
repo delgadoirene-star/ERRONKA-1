@@ -16,32 +16,52 @@ $totalProduktu = $conn->query("SELECT COUNT(*) c FROM produktua")->fetch_assoc()
 $totalSalmenta = $conn->query("SELECT COUNT(*) c FROM salmenta")->fetch_assoc()['c'] ?? 0;
 $nireSalmenta  = $conn->query("SELECT COUNT(*) c FROM salmenta WHERE langile_id=".$userId)->fetch_assoc()['c'] ?? 0;
 
-// Build encoded links using helper
-$lnk_salmenta_berria = function_exists('page_link') ? page_link(7, 'salmenta_berria') : '/views/salmenta_berria.php';
-$lnk_nire_salmentak  = function_exists('page_link') ? page_link(5, 'nire_salmentak')  : '/views/nire_salmentak.php';
-$lnk_produktuak      = function_exists('page_link') ? page_link(3, 'produktuak')      : '/views/produktuak.php';
-$lnk_langileak       = function_exists('page_link') ? page_link(2, 'langileak')       : '/views/langileak.php';
-$lnk_profile         = function_exists('page_link') ? page_link(6, 'profile')         : '/views/profile.php';
-
+// Remove old bottom links; use only the navbar for navigation
 $pageTitle = "Dashboard";
 $active = 'dashboard';
 require __DIR__ . '/partials/header.php';
 ?>
-<div class="page-header"><h1>📊 Dashboard</h1></div>
+<div class="page-header">
+    <h1>📊 Dashboard</h1>
+    <p>Laburmena eta egoera orokorra</p>
+</div>
 
-<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:24px;">
-    <div class="card" style="flex:1;min-width:180px;"><h3>Produktuak</h3><p><?=$totalProduktu?></p></div>
-    <div class="card" style="flex:1;min-width:180px;"><h3>Salmentak</h3><p><?=$totalSalmenta?></p></div>
-    <div class="card" style="flex:1;min-width:180px;"><h3>Nire salmentak</h3><p><?=$nireSalmenta?></p></div>
-    <?php if($isAdmin):?>
-    <div class="card" style="flex:1;min-width:180px;"><h3>Admin</h3><p>Rol: Admin</p></div>
-    <?php endif;?>
+<div class="cards-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:24px;">
+    <div class="dashboard-card" style="border-left:4px solid #3b82f6;">
+        <div class="card-icon">📦</div>
+        <div class="card-content">
+            <h3><?= (int)$totalProduktu ?></h3>
+            <p>Produktuak</p>
+        </div>
+    </div>
+    <div class="dashboard-card" style="border-left:4px solid #10b981;">
+        <div class="card-icon">💰</div>
+        <div class="card-content">
+            <h3><?= (int)$totalSalmenta ?></h3>
+            <p>Salmenta guztiak</p>
+        </div>
+    </div>
+    <div class="dashboard-card" style="border-left:4px solid #f59e0b;">
+        <div class="card-icon">🧾</div>
+        <div class="card-content">
+            <h3><?= (int)$nireSalmenta ?></h3>
+            <p>Nire salmentak</p>
+        </div>
+    </div>
+    <?php if ($isAdmin): ?>
+    <div class="dashboard-card" style="border-left:4px solid #ef4444;">
+        <div class="card-icon">🛡️</div>
+        <div class="card-content">
+            <h3>Admin</h3>
+            <p>Pribilegioak aktibo</p>
+        </div>
+    </div>
+    <?php endif; ?>
 </div>
-<div>
-    <a href="<?= htmlspecialchars($lnk_salmenta_berria) ?>" class="btn">Salmenta berria</a>
-    <a href="<?= htmlspecialchars($lnk_nire_salmentak) ?>" class="btn btn-secondary">Nire salmentak</a>
-    <a href="<?= htmlspecialchars($lnk_produktuak) ?>" class="btn btn-secondary">Produktuak</a>
-    <a href="<?= htmlspecialchars($lnk_langileak) ?>" class="btn btn-secondary">Langileak</a>
-    <a href="<?= htmlspecialchars($lnk_profile) ?>" class="btn btn-secondary">Profila</a>
+
+<div class="card" style="padding:16px;">
+    <h2 style="margin-top:0;">Oharra</h2>
+    <p>Nabigazioa goiko menu bidez egiten da. Eginbide zehatzetara sartzeko, erabili nabigazio-barra.</p>
 </div>
+
 <?php require __DIR__ . '/partials/footer.php'; ?>
