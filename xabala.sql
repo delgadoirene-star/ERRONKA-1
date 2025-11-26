@@ -70,12 +70,12 @@ CREATE TABLE IF NOT EXISTS seguritatea_loga (
   FOREIGN KEY (usuario_id) REFERENCES usuario(id) ON DELETE SET NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_usuario_email ON usuario(email);
-CREATE INDEX IF NOT EXISTS idx_usuario_nan ON usuario(nan);
-CREATE INDEX IF NOT EXISTS idx_langilea_usuario ON langilea(usuario_id);
-CREATE INDEX IF NOT EXISTS idx_salmenta_langile ON salmenta(langile_id);
-CREATE INDEX IF NOT EXISTS idx_salmenta_produktu ON salmenta(produktu_id);
-CREATE INDEX IF NOT EXISTS idx_salmenta_data ON salmenta(data_salmenta);
+CREATE INDEX idx_usuario_email ON usuario(email);
+CREATE INDEX idx_usuario_nan ON usuario(nan);
+CREATE INDEX idx_langilea_usuario ON langilea(usuario_id);
+CREATE INDEX idx_salmenta_langile ON salmenta(langile_id);
+CREATE INDEX idx_salmenta_produktu ON salmenta(produktu_id);
+CREATE INDEX idx_salmenta_data ON salmenta(data_salmenta);
 
 CREATE USER IF NOT EXISTS 'xabala_user'@'%' IDENTIFIED BY 'xabala_pass';
 GRANT ALL PRIVILEGES ON xabala_db.* TO 'xabala_user'@'%';

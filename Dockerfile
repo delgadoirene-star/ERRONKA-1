@@ -30,7 +30,18 @@ RUN if [ -f composer.json ]; then composer install --no-dev --optimize-autoloade
 # Copiar el resto del código (excluyendo vendor por .dockerignore)
 COPY . /var/www/html
 
-# Forzar regeneración del autoload si hay problemas
+# Install small tools (timeout is provided by coreutils; bash included)
+RUN apt-get update && apt-get install -y \
+        libzip-dev \
+        zip \
+        curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy wait-for-db helper and make executable
+COPY tools/wait-for-db.sh /usr/local/bin/wait-for-db.sh
+RUN chmod +x /usr/local/bin/wait-for-db.sh
+
+# Forcing regenerating autoload if composer present
 RUN if [ -f composer.json ]; then composer dump-autoload --no-dev; fi
 
 # Configuración de errores PHP
@@ -42,4 +53,7 @@ RUN echo "error_reporting = E_ALL" >> /usr/local/etc/php/php.ini && \
 RUN chown -R www-data:www-data /var/www/html
 
 EXPOSE 80
-CMD ["apache2-foreground"]
+
+# Start by waiting for DB, then start Apache.
+# The script will exec the given command when DB is available.
+CMD ["/bin/bash", "/usr/local/bin/wait-for-db.sh", "apache2-foreground"]
