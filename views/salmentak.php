@@ -69,18 +69,18 @@ $dashboardLink = function_exists('page_link') ? page_link(1, 'dashboard') : '/vi
             <option value="">Produktua...</option>
             <?php foreach($produktua as $p):?><option value="<?=$p['id']?>"><?=htmlspecialchars($p['izena'])?></option><?php endforeach;?>
         </select>
-        <input name="kantitatea" type="number" value="1" min="1">
-        <input name="prezioa_unitarioa" type="number" step="0.01" placeholder="Unitarioa">
-        <input name="prezioa_totala" type="number" step="0.01" placeholder="Totala">
+        <input name="kantitatea" type="number" value="1" min="1" placeholder="Kantitatea">
+        <input name="prezioa_unitarioa" type="number" step="0.01" placeholder="Prezio unitarioa">
+        <input name="prezioa_totala" type="number" step="0.01" placeholder="Prezio totala">
         <input name="data_salmenta" type="date" value="<?=date('Y-m-d')?>">
         <input name="bezeroa_izena" type="text" placeholder="Bezeroa izena">
         <input name="bezeroa_nif" type="text" placeholder="Bezeroa NIF">
         <input name="bezeroa_telefonoa" type="text" placeholder="Bezeroa telefonoa">
-        <textarea name="oharra" placeholder="Oharrak"></textarea>
+        <textarea name="oharra" placeholder="Oharrak" style="flex:1 1 100%;min-height:72px;"></textarea>
         <button type="submit" class="btn btn-primary">Gorde</button>
     </form>
 
-    <table class="table">
+    <table class="data-table">
         <thead>
             <tr>
                 <th>Data</th>
@@ -98,7 +98,11 @@ $dashboardLink = function_exists('page_link') ? page_link(1, 'dashboard') : '/vi
                 <td><?=htmlspecialchars($s['produktu_izena'])?></td>
                 <td class="text-end"><?=htmlspecialchars($s['kantitatea'])?></td>
                 <td class="text-end"><?=htmlspecialchars($s['prezioa_totala'])?></td>
-                <td><?=htmlspecialchars($s['bezeroa_izena'])?><br><?=htmlspecialchars($s['bezeroa_nif'])?><br><?=htmlspecialchars($s['bezeroa_telefonoa'])?></td>
+                <td>
+                    <?=htmlspecialchars($s['bezeroa_izena'])?><br>
+                    <?=htmlspecialchars($s['bezeroa_nif'])?><br>
+                    <?=htmlspecialchars($s['bezeroa_telefonoa'])?>
+                </td>
                 <td>
                     <form method="POST" style="display:inline;">
                         <input type="hidden" name="csrf_token" value="<?=htmlspecialchars($csrf)?>">
@@ -111,6 +115,11 @@ $dashboardLink = function_exists('page_link') ? page_link(1, 'dashboard') : '/vi
             <?php endforeach;?>
         </tbody>
     </table>
+
+    <div class="card" style="padding:16px;margin-top:16px;">
+        <h2 style="margin:0 0 8px;">Oharra</h2>
+        <p>Nabigazioa goiko menu bidez egiten da.</p>
+    </div>
 
     <!-- Optional footer actions -->
     <div style="margin-top:12px;">
