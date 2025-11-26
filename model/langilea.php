@@ -13,13 +13,14 @@ class Langilea {
     private $foto;
 
     public function __construct($usuario_id, $departamendua = '', $pozisio = '', 
-                            $data_kontratazio = '', $soldata = 0, $telefonoa = '') {
+                            $data_kontratazio = null, $soldata = 0, $telefonoa = '', $foto = '') {
         $this->usuario_id = $usuario_id;
         $this->departamendua = $departamendua;
         $this->pozisio = $pozisio;
         $this->data_kontratazio = $data_kontratazio;
         $this->soldata = $soldata;
         $this->telefonoa = $telefonoa;
+        $this->foto = $foto;
     }
 
     // Getters
@@ -38,16 +39,16 @@ class Langilea {
 
     // Langilea sortzea
     public function sortu($conn) {
-        $sql = "INSERT INTO langilea (usuario_id, departamendua, pozisio, data_kontratazio, soldata, telefonoa) 
-                VALUES (?, ?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO langilea (usuario_id, departamendua, pozisio, data_kontratazio, soldata, telefonoa, foto) 
+                VALUES (?, ?, ?, ?, ?, ?, ?)";
         
         $stmt = $conn->prepare($sql);
         if (!$stmt) {
             return false;
         }
         
-        $stmt->bind_param("isssds", $this->usuario_id, $this->departamendua, $this->pozisio, 
-                          $this->data_kontratazio, $this->soldata, $this->telefonoa);
+        $stmt->bind_param("isssiss", $this->usuario_id, $this->departamendua, $this->pozisio, 
+                          $this->data_kontratazio, $this->soldata, $this->telefonoa, $this->foto);
         
         $emaitza = $stmt->execute();
         
@@ -85,17 +86,12 @@ class Langilea {
                                FROM langilea l 
                                JOIN usuario u ON l.usuario_id = u.id 
                                WHERE l.id=? AND l.aktibo=TRUE");
-        
         $stmt->bind_param("i", $id);
         $stmt->execute();
         $result = $stmt->get_result();
-        
-        if ($result->num_rows > 0) {
-            return $result->fetch_assoc();
-        }
-        
+        $row = $result->num_rows > 0 ? $result->fetch_assoc() : null;
         $stmt->close();
-        return null;
+        return $row;
     }
 
     // Eguneratzea
@@ -119,11 +115,11 @@ class Langilea {
 
     // Ezabatzea
     public static function ezabatu($conn, $id) {
-        // Siempre usar prepared statements, incluso en fallback
         $stmt = $conn->prepare("DELETE FROM langilea WHERE id = ?");
         $stmt->bind_param("i", $id);
         $ok = $stmt->execute();
         $stmt->close();
+        return $ok;
     }
 }
 ?>

@@ -1,52 +1,62 @@
 <?php
-require_once __DIR__ . '/../config/konexioa.php';
-require_once __DIR__ . '/../config/config.php';
-require_once __DIR__ . '/../model/usuario.php';
+require_once __DIR__ . '/../bootstrap.php';
 
-// Load Hashids if available
-$hashids = null;
-$autoload = __DIR__ . '/../vendor/autoload.php';
-if (file_exists($autoload)) {
-    require_once $autoload;
-    if (class_exists('\\Hashids\\Hashids')) {
-        $hashids = new \Hashids\Hashids('ZAB_IGAI_PLAT_GEN', 8);
-    } else {
-        error_log('Hashids class not found in vendor; continuing without Hashids.');
+$userId = $_SESSION['usuario_id'] ?? null;
+if (!$userId) { header('Location: /signin.php'); exit; }
+
+$mensaje = '';
+$errorea = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $postedToken = $_POST['csrf_token'] ?? '';
+    if (!Seguritatea::verifyCSRFToken($postedToken)) {
+        $errorea = "Segurtasun-errorea (CSRF).";
+        Seguritatea::logSeguritatea($conn, "CSRF_ATTACK", "profile:update", $userId);
+    } elseif (isset($_POST['actualizar_datos'])) {
+        $izena = trim($_POST['izena'] ?? '');
+        $abizena = trim($_POST['abizena'] ?? '');
+        $nan = trim($_POST['nan'] ?? '');
+        $jaiotegun = $_POST['jaiotegun'] ?? null;
+
+        $stmt = $conn->prepare("UPDATE usuario SET izena=?, abizena=?, nan=?, jaiotegun=? WHERE id=?");
+        $stmt->bind_param("ssssi", $izena, $abizena, $nan, $jaiotegun, $userId);
+        if ($stmt->execute()) {
+            $mensaje = "Datuak eguneratu dira.";
+        } else {
+            $errorea = "Errorea datuak eguneratzean.";
+        }
+        $stmt->close();
+    } elseif (isset($_POST['actualizar_credenciales'])) {
+        $nuevo_user = trim($_POST['nuevo_user'] ?? '');
+        $nuevo_password = $_POST['nuevo_password'] ?? '';
+        $confirmar_password = $_POST['confirmar_password'] ?? '';
+
+        if ($nuevo_password !== $confirmar_password) {
+            $errorea = "Pasahitzak ez datoz bat.";
+        } elseif (!Seguritatea::balioztaPasahitza($nuevo_password)) {
+            $errorea = "Pasahitza ahula da.";
+        } else {
+            $hash = password_hash($nuevo_password, PASSWORD_DEFAULT);
+            $stmt = $conn->prepare("UPDATE usuario SET user=?, password=? WHERE id=?");
+            $stmt->bind_param("ssi", $nuevo_user, $hash, $userId);
+            if ($stmt->execute()) {
+                $mensaje = "Kredentzialak eguneratu dira.";
+            } else {
+                $errorea = "Errorea kredentzialak eguneratzean.";
+            }
+            $stmt->close();
+        }
+    } elseif (isset($_POST['logoff'])) {
+        header('Location: ../logout.php'); exit;
+    } elseif (isset($_POST['hasiera'])) {
+        header('Location: ../index.php'); exit;
     }
-} else {
-    error_log('Composer autoload not found; continuing without Hashids.');
 }
 
-// Handle ref parameter
-$ref = $_GET['ref'] ?? '';
-$userId = null;
-if (!empty($ref) && $hashids !== null) {
-    $decoded = $hashids->decode($ref);
-    $userId = $decoded[0] ?? null;
-}
-if (!$userId) {
-    echo 'Invalid user.';
-    exit;
-}
-
-$user = $usuario->getUser();
-
-// Mostrar mensajes
-if (isset($_SESSION['mensaje'])) {
-    echo '<div style="color: green; margin-bottom: 15px; padding: 10px; border: 1px solid green; background: #e6ffe6;">';
-    echo htmlspecialchars($_SESSION['mensaje']);
-    echo '</div>';
-    unset($_SESSION['mensaje']);
-}
-
-if (isset($_SESSION['error'])) {
-    echo '<div style="color: red; margin-bottom: 15px; padding: 10px; border: 1px solid red; background: #ffe6e6;">';
-    echo htmlspecialchars($_SESSION['error']);
-    echo '</div>';
-    unset($_SESSION['error']);
-}
+$user = Usuario::lortuIdAgatik($conn, $userId);
+$aktiboak = $aktiboak ?? [];
+$historia = $historia ?? [];
 ?>
-
 <script>
 document.addEventListener("DOMContentLoaded", function() {
     if (localStorage.getItem('darkMode') === '1') {
@@ -71,48 +81,43 @@ function openTab(evt, tabName) {
 
 <div style="display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 12px;">
     <form method="POST" style="display:inline;">
-        <input type="submit" name="hasiera" value="Hasiera" class="btn" onclick="window.location.href='index.php'; return false;"/>
+        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
+        <input type="submit" name="hasiera" value="Hasiera" class="btn"/>
     </form>
     <form method="POST" style="display:inline;">
+        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
         <input type="submit" name="logoff" value="Saioa amaitu" class="btn"/>
     </form>
 </div>
 
-<h1>Profila</h1>
-
-<!-- Pestañas -->
-<div class="tab" style="display: flex; gap: 8px; margin-bottom: 20px;">
-    <button class="tablinks active" onclick="openTab(event, 'datos')" style="flex: 1;">Datu pertsonalak</button>
-    <button class="tablinks" onclick="openTab(event, 'credenciales')" style="flex: 1;">Kredentzialak</button>
-    <button class="tablinks" onclick="openTab(event, 'activos')" style="flex: 1;">Kurtso aktiboak</button>
-    <button class="tablinks" onclick="openTab(event, 'historial')" style="flex: 1;">Historia</button>
-</div>
+<?php if (!empty($mensaje)): ?>
+<div class="alert alert-success">✓ <?php echo htmlspecialchars($mensaje); ?></div>
+<?php endif; ?>
+<?php if (!empty($errorea)): ?>
+<div class="alert alert-error">⚠ <?php echo htmlspecialchars($errorea); ?></div>
+<?php endif; ?>
 
 <!-- Datos personales -->
 <div id="datos" class="tabcontent active card" style="max-width:600px;margin:0 auto;">
     <h2 style="text-align:center;">Datu pertsonalak</h2>
     <div style="text-align:center;margin-bottom:20px;">
-        <p><strong>Izena:</strong> <?php echo htmlspecialchars($usuario->getIzena()) . " " . htmlspecialchars($usuario->getAbizena()); ?></p>
-        <p><strong>NAN:</strong> <?php echo htmlspecialchars($usuario->getNan()); ?></p>
-        <p><strong>Jaioteguna:</strong> <?php echo htmlspecialchars($usuario->getJaiotegun()); ?></p>
-        <p><strong>Email:</strong> <?php echo htmlspecialchars($usuario->getEmail()); ?></p>
-        <p><strong>IBAN:</strong> <?php echo htmlspecialchars($usuario->getIban()); ?></p>
+        <p><strong>Izena:</strong> <?php echo htmlspecialchars(($user['izena'] ?? '') . " " . ($user['abizena'] ?? '')); ?></p>
+        <p><strong>NAN:</strong> <?php echo htmlspecialchars($user['nan'] ?? '-'); ?></p>
+        <p><strong>Jaioteguna:</strong> <?php echo htmlspecialchars($user['jaiotegun'] ?? '-'); ?></p>
+        <p><strong>Email:</strong> <?php echo htmlspecialchars($user['email'] ?? '-'); ?></p>
+        <p><strong>IBAN:</strong> <?php echo htmlspecialchars($user['iban'] ?? '-'); ?></p>
     </div>
-    
     <form method="POST" style="max-width:400px;margin:0 auto;">
+        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
         <h3 style="text-align:center;">Datuak eguneratu</h3>
         <label>Izena:</label>
-        <input type="text" name="izena" required value="<?php echo htmlspecialchars($usuario->getIzena()); ?>" style="width:100%;margin-bottom:10px;">
-        
+        <input type="text" name="izena" required value="<?php echo htmlspecialchars($user['izena'] ?? ''); ?>" style="width:100%;margin-bottom:10px;">
         <label>Abizena:</label>
-        <input type="text" name="abizena" required value="<?php echo htmlspecialchars($usuario->getAbizena()); ?>" style="width:100%;margin-bottom:10px;">
-        
+        <input type="text" name="abizena" required value="<?php echo htmlspecialchars($user['abizena'] ?? ''); ?>" style="width:100%;margin-bottom:10px;">
         <label>NAN:</label>
-        <input type="text" name="nan" required value="<?php echo htmlspecialchars($usuario->getNan()); ?>" style="width:100%;margin-bottom:10px;">
-        
+        <input type="text" name="nan" required value="<?php echo htmlspecialchars($user['nan'] ?? ''); ?>" style="width:100%;margin-bottom:10px;">
         <label>Jaioteguna:</label>
-        <input type="date" name="jaiotegun" required value="<?php echo htmlspecialchars($usuario->getJaiotegun()); ?>" style="width:100%;margin-bottom:10px;">
-        
+        <input type="date" name="jaiotegun" value="<?php echo htmlspecialchars($user['jaiotegun'] ?? ''); ?>" style="width:100%;margin-bottom:10px;">
         <input type="submit" name="actualizar_datos" value="Datuak eguneratu" class="btn" style="width:100%;margin-top:12px;">
     </form>
 </div>
@@ -121,15 +126,13 @@ function openTab(evt, tabName) {
 <div id="credenciales" class="tabcontent card" style="max-width:600px;margin:0 auto;">
     <h2 style="text-align:center;">Kredentzialak eguneratu</h2>
     <form method="POST" style="max-width:400px;margin:0 auto;">
+        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
         <label>Erabiltzaile berria:</label>
-        <input type="text" name="nuevo_user" required value="<?php echo htmlspecialchars($usuario->getUser()); ?>" style="width:100%;margin-bottom:10px;">
-        
+        <input type="text" name="nuevo_user" required value="<?php echo htmlspecialchars($user['user'] ?? ''); ?>" style="width:100%;margin-bottom:10px;">
         <label>Pasahitz berria:</label>
         <input type="password" name="nuevo_password" required style="width:100%;margin-bottom:10px;">
-        
         <label>Berretsi pasahitza:</label>
         <input type="password" name="confirmar_password" required style="width:100%;margin-bottom:10px;">
-        
         <input type="submit" name="actualizar_credenciales" value="Kredentzialak eguneratu" class="btn" style="width:100%;margin-top:12px;">
     </form>
 </div>

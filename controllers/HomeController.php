@@ -1,7 +1,4 @@
 <?php
-// filepath: c:\xampp\htdocs\ariketak\ERRONKA-1_IGAI\ERRONKA-1\controllers/HomeController.php
-ini_set('display_errors', 1);  // Temporary for debugging
-// ... remove after testing ...
 try {
     require_once __DIR__ . '/../bootstrap.php';  // Loads global $hashids
     require_once __DIR__ . '/../model/seguritatea.php';
@@ -14,21 +11,25 @@ global $hashids;  // Access global Hashids
 
 // Redirect if logged in
 if (isset($_SESSION['usuario_id'])) {
-    header('Location: views/dashboard.php');
+    $target = ($hashids !== null) ? ('/' . $hashids->encode(1) . '.php') : '/';
+    header("Location: $target");
     exit;
 }
 
 // Variables for view
 $errorea = "";
-$csrf_token = Seguritatea::generateCSRFToken();
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = Seguritatea::generateCSRFToken();
+}
+$csrf_token = $_SESSION['csrf_token'];
 
-// Process POST
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    try {
-        error_log("Login attempt: email={$_POST['email']}, csrf_token=" . ($_POST['csrf_token'] ?? 'none'));
-        if (!Seguritatea::verifyCSRFToken($_POST['csrf_token'] ?? '')) {
-            $errorea = "Segurtasun-errorea (CSRF).";
-            Seguritatea::logSeguritatea($conn, "CSRF_ATTACK", "index:login", null);
+try {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        // Verify CSRF against session; do not regenerate here
+        $posted = $_POST['csrf_token'] ?? '';
+        if (!Seguritatea::verifyCSRFToken($posted)) {
+            $errorea = "Segurtasun-errorea.";
+            Seguritatea::logSeguritatea($conn, "CSRF_ATTACK", "Hasiera orrialdean", null);
         } else {
             $email = trim($_POST['email'] ?? '');
             $password = $_POST['password'] ?? '';
@@ -41,29 +42,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $resultado = Seguritatea::egiaztautentifikazioa($conn, $email, $password);
                 error_log("Login result: " . print_r($resultado, true));  // Move here
-                
+                    
                 if ($resultado) {
                     error_log("Login success for $email");
                     Seguritatea::zuritu_login_intentoak($email);
                     $_SESSION['usuario_id'] = $resultado['id'];
                     $_SESSION['usuario_rol'] = $resultado['rol'];
                     $_SESSION['last_activity'] = time();
-                    
+                    // Prevent fixation and rotate CSRF
+                    session_regenerate_id(true);
+                    $_SESSION['csrf_token'] = Seguritatea::generateCSRFToken();
+
                     Seguritatea::logSeguritatea($conn, "LOGIN_EXITOSO", $email, $resultado['id']);
-                    
-                    header('Location: views/dashboard.php');
+
+                    $target = ($hashids !== null) ? ('/' . $hashids->encode(1) . '.php') : '/';
+                    header("Location: $target");
                     exit;
                 } else {
                     error_log("Login failed for $email: invalid credentials");
                     $errorea = "Email edo pasahitza okerra.";
-                    Seguritatea::logSeguritatea($conn, "LOGIN_FALLIDO", $email, null);
                 }
             }
         }
-    } catch (Throwable $e) {
-        error_log("Login error: " . $e->getMessage());
-        $errorea = "Errorea login-ean. Saiatu berriro.";
     }
+} catch (Throwable $e) {
+    error_log("Login error: " . $e->getMessage());
+    $errorea = "Errorea login-ean. Saiatu berriro.";
 }
 
 // Handle ref parameter

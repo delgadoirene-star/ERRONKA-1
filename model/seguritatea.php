@@ -1,71 +1,76 @@
 <?php
 // Segurtasun-klasea (RA6 betetzeko)
 class Seguritatea {
-    
+
     // Sesioa hasieratzea
-    public static function hasieratuSesioa() {
+    public static function hasieratuSesioa(): void {
         if (session_status() === PHP_SESSION_NONE) {
+            session_set_cookie_params([
+                'lifetime' => 0,
+                'path' => '/',
+                'domain' => '',
+                'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+                'httponly' => true,
+                'samesite' => 'Lax',
+            ]);
+            ini_set('session.use_strict_mode', '1');
             session_start();
+            // Idle timeout
+            $timeout = defined('SESSION_TIMEOUT') ? SESSION_TIMEOUT : 1800;
+            if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > $timeout)) {
+                session_unset();
+                session_destroy();
+                session_start();
+            }
+            $_SESSION['last_activity'] = time();
+            if (!isset($_SESSION['initiated'])) {
+                session_regenerate_id(true);
+                $_SESSION['initiated'] = true;
+            }
         }
     }
-    
+
     // CSRF token sortzea
-    public static function generateCSRFToken() {
-        return bin2hex(random_bytes(32));
+    public static function generateCSRFToken(): string {
+        $token = bin2hex(random_bytes(32));
+        $_SESSION['csrf_token'] = $token;
+        $_SESSION['csrf_token_time'] = time();
+        return $token;
     }
     
     // CSRF token egiaztatzea
-    public static function verifyCSRFToken($token) {
-        return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
+    public static function verifyCSRFToken(?string $token): bool {
+        $sessionToken = $_SESSION['csrf_token'] ?? '';
+        $ts = $_SESSION['csrf_token_time'] ?? 0;
+        $lifetime = defined('CSRF_TOKEN_LIFETIME') ? CSRF_TOKEN_LIFETIME : 3600;
+        if (!$token || !$sessionToken) return false;
+        if (!hash_equals($sessionToken, $token)) return false;
+        if ($ts && (time() - $ts) > $lifetime) return false;
+        return true;
     }
 
     // ===== RATE LIMITING - Botaren kontrako (RA6) =====
-    public static function egiaztaLoginIntentoa($email) {
-        self::hasieratuSesioa();
-        
-        $key = 'login_attempt_' . md5($email);
-        $timeout_key = 'login_timeout_' . md5($email);
-        
-        // Timeout aktiboan badago
-        if (isset($_SESSION[$timeout_key]) && time() < $_SESSION[$timeout_key]) {
-            return false;
-        }
-        
-        // Lehena bada
-        if (!isset($_SESSION[$key])) {
-            $_SESSION[$key] = 0;
-        }
-        
-        $_SESSION[$key]++;
-        
-        // Max saioak gainditu
-        if ($_SESSION[$key] > LOGIN_MAX_ATTEMPTS) {
-            $_SESSION[$timeout_key] = time() + LOGIN_ATTEMPT_TIMEOUT;
-            return false;
-        }
-        
-        return true;
+    public static function egiaztaLoginIntentoa(string $email): bool {
+        $key = 'login_attempts:' . strtolower($email);
+        $_SESSION[$key] = ($_SESSION[$key] ?? 0) + 1;
+        return ($_SESSION[$key] <= (defined('LOGIN_MAX_ATTEMPTS') ? LOGIN_MAX_ATTEMPTS : 5));
     }
     
     // Login saioak garbitzea
-    public static function zuritu_login_intentoak($email) {
-        self::hasieratuSesioa();
-        $key = 'login_attempt_' . md5($email);
-        $timeout_key = 'login_timeout_' . md5($email);
-        
+    public static function zuritu_login_intentoak(string $email): void {
+        $key = 'login_attempts:' . strtolower($email);
         unset($_SESSION[$key]);
-        unset($_SESSION[$timeout_key]);
     }
 
     // ===== PASAHITZAREN BALIOZTAPENA (RA6) =====
-    public static function balioztaPasahitza($password) {
-        $errors = [];
-        if (strlen($password) < PASSWORD_MIN_LENGTH) $errors[] = "Gutxienez " . PASSWORD_MIN_LENGTH . " karaktere.";
-        if (!preg_match('/[A-Z]/', $password)) $errors[] = "Maiuskula bat gutxienez.";
-        if (!preg_match('/[a-z]/', $password)) $errors[] = "Minuskula bat gutxienez.";
-        if (!preg_match('/\d/', $password)) $errors[] = "Zenbaki bat gutxienez.";
-        if (!preg_match('/[^A-Za-z\d]/', $password)) $errors[] = "Karaktere espeziala bat gutxienez.";
-        return $errors;
+    public static function balioztaPasahitza(string $password): bool {
+        // 8+ chars, upper, lower, digit, special
+        $len = strlen($password) >= 8;
+        $upp = preg_match('/[A-Z]/', $password);
+        $low = preg_match('/[a-z]/', $password);
+        $dig = preg_match('/\d/', $password);
+        $spe = preg_match('/[^a-zA-Z0-9]/', $password);
+        return $len && $upp && $low && $dig && $spe;
     }
 
     // ===== AUTENTIFIKAZIOA (RA6) =====
@@ -118,31 +123,26 @@ class Seguritatea {
     }
 
     // ===== LOGGING - SEGURITATEA (RA8) =====
-    public static function logSeguritatea($conn, $evento, $detaleak, $usuario_id) {
-        $stmt = $conn->prepare("INSERT INTO seguritatea_loga (usuario_id, evento, detaleak, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)");
-        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-        $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
-        $stmt->bind_param("issss", $usuario_id, $evento, $detaleak, $ip, $user_agent);
-        $stmt->execute();
+    public static function logSeguritatea(mysqli $conn, string $evento, string $detaleak, ?int $usuarioId = null): void {
+        try {
+            $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+            $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
+            $stmt = $conn->prepare("INSERT INTO seguritatea_loga (usuario_id, evento, detaleak, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)");
+            $stmt->bind_param("issss", $usuarioId, $evento, $detaleak, $ip, $ua);
+            $stmt->execute();
+            $stmt->close();
+        } catch (\Throwable $e) {
+            error_log("Seguritatea log error: " . $e->getMessage());
+        }
     }
     
     // Sesioaren egiaztapena
-    public static function egiaztaSesioa() {
+    public static function egiaztaSesioa(): void {
         self::hasieratuSesioa();
-        
-        if (!isset($_SESSION['usuario_id'])) {
-            return false;
+        if (empty($_SESSION['usuario_id'])) {
+            header('Location: /signin.php');
+            exit;
         }
-        
-        // Session timeout
-        $timeout = SESSION_TIMEOUT;
-        if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity']) > $timeout) {
-            session_destroy();
-            return false;
-        }
-        
-        $_SESSION['last_activity'] = time();
-        return true;
     }
 
 }

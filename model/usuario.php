@@ -21,6 +21,7 @@ class Usuario {
         $this->user = $user;
         $this->password = $password;
         $this->rol = $rol;
+        $this->aktibo = 1;
     }
 
     // Getters
@@ -39,25 +40,15 @@ class Usuario {
 
     // Sortzea
     public function sortu($conn) {
-        $sql = "INSERT INTO usuario (izena, abizena, nan, email, user, password, rol) 
-                VALUES (?, ?, ?, ?, ?, ?, ?)";
-        
-        $stmt = $conn->prepare($sql);
-        if (!$stmt) {
-            return false;
+        $hash = password_hash($this->password, PASSWORD_DEFAULT);
+        $stmt = $conn->prepare("INSERT INTO usuario (izena, abizena, nan, email, user, password, rol, aktibo) VALUES (?,?,?,?,?,?,?,1)");
+        $stmt->bind_param("sssssss", $this->izena, $this->abizena, $this->nan, $this->email, $this->user, $hash, $this->rol);
+        $ok = $stmt->execute();
+        if ($ok) {
+            $this->id = $stmt->insert_id;
         }
-        
-        $stmt->bind_param("sssssss", $this->izena, $this->abizena, $this->nan, 
-                          $this->email, $this->user, $this->password, $this->rol);
-        
-        $emaitza = $stmt->execute();
-        
-        if ($emaitza) {
-            $this->id = $conn->insert_id;
-        }
-        
         $stmt->close();
-        return $emaitza;
+        return $ok;
     }
 
     // Email edo NANa bidez bilatzea
@@ -71,26 +62,28 @@ class Usuario {
     
     // ID bidez bilatzea
     public static function lortuIdAgatik($conn, $id) {
-        $stmt = $conn->prepare("SELECT * FROM usuario WHERE id=? AND aktibo=TRUE");
-        if (!$stmt) {
-            return null;
-        }
-        
+        $stmt = $conn->prepare("SELECT * FROM usuario WHERE id = ?");
         $stmt->bind_param("i", $id);
         $stmt->execute();
-        $result = $stmt->get_result();
-        
-        if ($result->num_rows > 0) {
-            return $result->fetch_assoc();
-        }
-        
+        $res = $stmt->get_result();
+        $row = $res->fetch_assoc();
         $stmt->close();
-        return null;
+        return $row ?: null;
     }
-    
+
+    public static function lortuEmailAgatik(mysqli $conn, string $email): ?array {
+        $stmt = $conn->prepare("SELECT * FROM usuario WHERE email = ?");
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $row = $res->fetch_assoc();
+        $stmt->close();
+        return $row ?: null;
+    }
+
     // Pasahitza aldatzea
     public function aldatuPasahitza($conn, $pasahitz_berria) {
-        $hash = password_hash($pasahitz_berria, PASSWORD_ARGON2ID);
+        $hash = password_hash($pasahitz_berria, PASSWORD_DEFAULT);
         $stmt = $conn->prepare("UPDATE usuario SET password=? WHERE id=?");
         $stmt->bind_param("si", $hash, $this->id);
         $emaitza = $stmt->execute();
@@ -98,10 +91,3 @@ class Usuario {
         return $emaitza;
     }
 }
-
-// Siempre usar prepared statements, incluso en fallback
-$stmt = $conn->prepare("DELETE FROM langilea WHERE id = ?");
-$stmt->bind_param("i", $id);
-$ok = $stmt->execute();
-$stmt->close();
-?>

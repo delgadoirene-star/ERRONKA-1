@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../bootstrap.php';  // Loads global $hashids
+require_once __DIR__ . '/../bootstrap.php';
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../model/usuario.php';
 require_once __DIR__ . '/../model/langilea.php';
@@ -9,9 +9,8 @@ require_once __DIR__ . '/../model/seguritatea.php';
 
 global $hashids;  // Access global Hashids
 
-session_start();
-
-if (!isset($_SESSION['usuario_id'])) {
+// Do not call session_start(); bootstrap already started the session
+if (empty($_SESSION['usuario_id'])) {
     header("Location: ../index.php");
     exit;
 }
@@ -89,7 +88,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
 }
 
 $produktuak = Produktua::lortuGuztiak($conn);
-$csrf_token = Seguritatea::generateCSRFToken();
+
+// Generate CSRF only if not set
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = Seguritatea::generateCSRFToken();
+}
+$csrf_token = $_SESSION['csrf_token'];
 
 // Generate encoded page names
 $dashboardEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $hashids->encode(1) : 'dashboard';
@@ -113,11 +117,11 @@ $nireSalmentakEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')
             <h2>🏭 <?php echo EMPRESA_IZENA; ?></h2>
         </div>
         <div class="navbar-menu">
-            <a href="<?php echo $dashboardEncoded; ?>.php" class="nav-link">📊 Dashboard</a>
-            <a href="<?php echo $langileakEncoded; ?>.php" class="nav-link">👥 Langileak</a>
-            <a href="<?php echo $produktuakEncoded; ?>.php" class="nav-link active">📦 Produktuak</a>
-            <a href="<?php echo $salmentakEncoded; ?>.php" class="nav-link">💰 Salmentak</a>
-            <a href="<?php echo $nireSalmentakEncoded; ?>.php" class="nav-link">📋 Nire salmentak</a>
+            <a href="/<?php echo $dashboardEncoded; ?>.php" class="nav-link">📊 Dashboard</a>
+            <a href="/<?php echo $langileakEncoded; ?>.php" class="nav-link">👥 Langileak</a>
+            <a href="/<?php echo $produktuakEncoded; ?>.php" class="nav-link active">📦 Produktuak</a>
+            <a href="/<?php echo $salmentakEncoded; ?>.php" class="nav-link">💰 Salmentak</a>
+            <a href="/<?php echo $nireSalmentakEncoded; ?>.php" class="nav-link">📋 Nire salmentak</a>
             <span class="navbar-user">
                 <?php echo htmlspecialchars($usuario_datos['izena'] . " " . $usuario_datos['abizena']); ?>
             </span>

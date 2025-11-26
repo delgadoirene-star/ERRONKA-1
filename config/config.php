@@ -9,11 +9,12 @@ define('EMPRESA_IZENA', 'Xabala Enpresak');
 define('EMPRESA_DESKRIPZIOA', 'Enpresaren kudeaketa eta salmentaren sistema');
 
 // ===== URL KONFIGURAZIOA =====
-$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
+$scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
 $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-$base_path = '/ariketak/ERRONKA-1%20(IGAI)/ERRONKA-1/';
+$scriptDir = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/');
+$base = $scriptDir === '' ? '/' : $scriptDir . '/';
 
-define('BASE_URL', $protocol . $host . $base_path);
+define('BASE_URL', $scheme . '://' . $host . $base);
 define('ASSETS_URL', BASE_URL . 'assets/');
 define('UPLOADS_URL', BASE_URL . 'uploads/');
 

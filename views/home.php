@@ -7,11 +7,10 @@ $headerBg   = $baseUrl . '/style/img/galletas.jpg';
 $indexPath  = $baseUrl . '/index.php';
 $signinPath = $baseUrl . '/signin.php';
 
-// Generate CSRF token if not set
-if (!isset($csrf_token)) {
-    require_once __DIR__ . '/../model/seguritatea.php';
-    $csrf_token = Seguritatea::generateCSRFToken();
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = Seguritatea::generateCSRFToken();
 }
+$csrf_token = $_SESSION['csrf_token'];
 ?>
 <!DOCTYPE html>
 <html lang="eu">

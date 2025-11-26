@@ -9,8 +9,14 @@ require_once __DIR__ . '/../model/seguritatea.php';
 
 global $hashids;  // Access global Hashids
 
-session_start();
+// Remove session_start(); already started
 Seguritatea::egiaztaSesioa();
+
+// CSRF token sortzea (only if not set)
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = Seguritatea::generateCSRFToken();
+}
+$csrf_token = $_SESSION['csrf_token'];
 
 $mensajea = "";
 $errorea = "";
@@ -29,9 +35,9 @@ $langile_info = $result->fetch_assoc();
 $stmt->close();
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // CSRF egiaztatzea
-    if (!hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'] ?? '')) {
-        $errorea = "Segurtasun-errorea.";
+    if (!Seguritatea::verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+        $errorea = "Segurtasun-errorea (CSRF).";
+        Seguritatea::logSeguritatea($conn, "CSRF_ATTACK", "salmenta_berria:add", $_SESSION['usuario_id'] ?? null);
     } else {
         $produktu_id = intval($_POST['produktu_id'] ?? 0);
         $kantitatea = intval($_POST['kantitatea'] ?? 0);
@@ -64,10 +70,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 );
                 
                 if ($salmenta->sortu($conn)) {
-                    // Stocka eguneratzea
-                    Produktua::eguneratuStocka($conn, $produktu_id, $kantitatea);
-                    
-                    $mensajea = "Salmenta egoki sortu da!";
+                    // Stock murriztu modu seguruan (no negative)
+                    if (!Produktua::murriztuStocka($conn, $produktu_id, $kantitatea)) {
+                        $errorea = "Stock eguneratzeak huts egin du.";
+                    } else {
+                        $mensajea = "Salmenta egoki sortu da!";
+                        Seguritatea::logSeguritatea($conn, "SALMENTA_SORTU", "P:$produktu_id Q:$kantitatea", $_SESSION['usuario_id'] ?? null);
+                    }
                 } else {
                     $errorea = "Errorea salmenta sortzean.";
                 }
@@ -76,16 +85,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 }
 
-// CSRF token sortzea
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
-
 // Generate encoded page names
 $dashboardEncoded = ($hashids !== null) ? $hashids->encode(1) : 'dashboard';
 $salmentaBerriaEncoded = ($hashids !== null) ? $hashids->encode(7) : 'salmenta_berria';
-$nireSalmentakEncoded = ($hashids !== null) ? $hashids->encode(8) : 'nire_salmentak';
-$profileEncoded = ($hashids !== null) ? $hashids->encode(9) : 'profile';
+$nireSalmentakEncoded = ($hashids !== null) ? $hashids->encode(5) : 'nire_salmentak';
+$profileEncoded = ($hashids !== null) ? $hashids->encode(6) : 'profile';
+$usuario_datos = Usuario::lortuIdAgatik($conn, $_SESSION['usuario_id']);
 ?>
 <!DOCTYPE html>
 <html lang="eu">
@@ -102,11 +107,11 @@ $profileEncoded = ($hashids !== null) ? $hashids->encode(9) : 'profile';
                 <h2>🏭 Xabala</h2>
             </div>
             <ul class="navbar-menu">
-                <li><a href="<?php echo $dashboardEncoded; ?>.php">Dashboard</a></li>
-                <li><a href="<?php echo $salmentaBerriaEncoded; ?>.php" class="active">Salmenta Berria</a></li>
-                <li><a href="<?php echo $nireSalmentakEncoded; ?>.php">Nire Salmentak</a></li>
-                <li><a href="<?php echo $profileEncoded; ?>.php">👤 <?php echo htmlspecialchars($_SESSION['usuario_izena']); ?></a></li>
-                <li><a href="./logout.php">Atera</a></li>
+                <li><a href="/<?php echo $dashboardEncoded; ?>.php">Dashboard</a></li>
+                <li><a href="/<?php echo $salmentaBerriaEncoded; ?>.php" class="active">Salmenta Berria</a></li>
+                <li><a href="/<?php echo $nireSalmentakEncoded; ?>.php">Nire Salmentak</a></li>
+                <li><a href="/<?php echo $profileEncoded; ?>.php">👤 <?php echo htmlspecialchars(($usuario_datos['izena'] ?? '') . ' ' . ($usuario_datos['abizena'] ?? '')); ?></a></li>
+                <li><a href="../logout.php">Atera</a></li>
             </ul>
         </div>
     </nav>

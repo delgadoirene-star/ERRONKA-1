@@ -9,14 +9,18 @@ require_once __DIR__ . '/../model/seguritatea.php';
 
 global $hashids;  // Access global Hashids
 
-session_start();
-
+// Remove session_start(); already started
 if (!isset($_SESSION['usuario_id'])) {
     header("Location: ../index.php");
     exit;
 }
 
-$usuario_datos = Usuario::lortuIdAgatik($conn, $_SESSION['usuario_id']);
+// Do not regenerate CSRF on POST; only on first render
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = Seguritatea::generateCSRFToken();
+}
+$csrf_token = $_SESSION['csrf_token'];
+
 $langilea = Langilea::lortuGuztiak($conn);
 $produktuak = Produktua::lortuGuztiak($conn);
 
@@ -113,12 +117,16 @@ $data_hasiera = $_POST['data_hasiera'] ?? date('Y-m-01');
 $data_bukaera = $_POST['data_bukaera'] ?? date('Y-m-d');
 
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] == 'search') {
-    $salmentak = Salmenta::lortuDataTarteAn($conn, $data_hasiera, $data_bukaera);
+    if (!Seguritatea::verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+        $errorea = "Segurtasun-errorea (CSRF).";
+    } else {
+        $hasiera_dt = $data_hasiera . ' 00:00:00';
+        $bukaera_dt = $data_bukaera . ' 23:59:59';
+        $salmentak = Salmenta::lortuDataTarteAn($conn, $hasiera_dt, $bukaera_dt);
+    }
 } else {
     $salmentak = Salmenta::lortuGuztiak($conn);
 }
-
-$csrf_token = Seguritatea::generateCSRFToken();
 
 // Generate encoded page names
 $dashboardEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $hashids->encode(1) : 'dashboard';
@@ -126,6 +134,8 @@ $langileakEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? 
 $produktuakEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $hashids->encode(3) : 'produktuak';
 $salmentakEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $hashids->encode(4) : 'salmentak';
 $nireSalmentakEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $hashids->encode(5) : 'nire_salmentak';
+$usuario_datos = Usuario::lortuIdAgatik($conn, $_SESSION['usuario_id']);
+$profileEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $hashids->encode(6) : 'profile';
 
 ?>
 <!DOCTYPE html>
@@ -142,12 +152,12 @@ $nireSalmentakEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')
             <h2>🏭 <?php echo EMPRESA_IZENA; ?></h2>
         </div>
         <div class="navbar-menu">
-            <a href="<?php echo $dashboardEncoded; ?>.php" class="nav-link">📊 Dashboard</a>
-            <a href="<?php echo $langileakEncoded; ?>.php" class="nav-link">👥 Langileak</a>
-            <a href="<?php echo $produktuakEncoded; ?>.php" class="nav-link">📦 Produktuak</a>
-            <a href="<?php echo $salmentakEncoded; ?>.php" class="nav-link active">💰 Salmentak</a>
-            <a href="<?php echo $nireSalmentakEncoded; ?>.php" class="nav-link">📋 Nire salmentak</a>
-            <a href="<?php echo $profileEncoded; ?>.php" class="nav-link">👤 <?php echo htmlspecialchars($_SESSION['usuario_izena']); ?></a>
+            <a href="/<?php echo $dashboardEncoded; ?>.php" class="nav-link">📊 Dashboard</a>
+            <a href="/<?php echo $langileakEncoded; ?>.php" class="nav-link">👥 Langileak</a>
+            <a href="/<?php echo $produktuakEncoded; ?>.php" class="nav-link">📦 Produktuak</a>
+            <a href="/<?php echo $salmentakEncoded; ?>.php" class="nav-link active">💰 Salmentak</a>
+            <a href="/<?php echo $nireSalmentakEncoded; ?>.php" class="nav-link">📋 Nire salmentak</a>
+            <a href="/<?php echo $profileEncoded; ?>.php" class="nav-link">👤 <?php echo htmlspecialchars(($usuario_datos['izena'] ?? '') . ' ' . ($usuario_datos['abizena'] ?? '')); ?></a>
             <a href="../logout.php" class="nav-link logout">🚪 Itxi saioa</a>
         </div>
     </div>
@@ -231,6 +241,7 @@ $nireSalmentakEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')
             <h2>🔍 Bilaketa</h2>
             <form method="POST" class="search-form">
                 <input type="hidden" name="action" value="search">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                 
                 <div class="form-group">
                     <label>Hasiera data</label>

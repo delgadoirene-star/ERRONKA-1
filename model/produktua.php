@@ -76,13 +76,10 @@ class Produktua {
         $stmt->bind_param("i", $id);
         $stmt->execute();
         $result = $stmt->get_result();
-        
-        if ($result->num_rows > 0) {
-            return $result->fetch_assoc();
-        }
-        
+
+        $row = $result->num_rows > 0 ? $result->fetch_assoc() : null;
         $stmt->close();
-        return null;
+        return $row;
     }
 
     // Eguneratzea
@@ -120,16 +117,6 @@ class Produktua {
         $emaitza = $stmt->execute();
         $stmt->close();
         return $emaitza;
-    }
-
-    // Langilea ezabatzea
-    public static function ezabatuLangilea($conn, $id) {
-        // Siempre usar prepared statements, incluso en fallback
-        $stmt = $conn->prepare("DELETE FROM langilea WHERE id = ?");
-        $stmt->bind_param("i", $id);
-        $ok = $stmt->execute();
-        $stmt->close();
-        return $ok;
     }
 }
 ?>

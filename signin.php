@@ -4,85 +4,56 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-require_once __DIR__ . '/config/konexioa.php';
-require_once __DIR__ . '/config/config.php';
+require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/model/usuario.php';
 require_once __DIR__ . '/model/langilea.php';
-require_once __DIR__ . '/model/seguritatea.php';
-
-session_start();
-session_regenerate_id(true);
 
 $errorea = "";
 $arrakasta = false;
 
-// CSRF token sortzea
-$csrf_token = Seguritatea::generateCSRFToken();
+// Generate CSRF token only once
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = Seguritatea::generateCSRFToken();
+}
+$csrf_token = $_SESSION['csrf_token'];
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // CSRF token egiaztatzea
-    if (!Seguritatea::verifyCSRFToken($_POST['csrf_token'] ?? '')) {
-        $errorea = "Segurtasun-errorea. Saioa berrezarri eta saiatu berriro.";
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $postedToken = $_POST['csrf_token'] ?? '';
+    $email = trim($_POST['email'] ?? '');
+    $izena = trim($_POST['izena'] ?? '');
+    $abizena = trim($_POST['abizena'] ?? '');
+    $nan = trim($_POST['nan'] ?? '');
+    $user = trim($_POST['user'] ?? '');
+    $password = trim($_POST['password'] ?? '');
+    $departamendua = trim($_POST['departamendua'] ?? '');
+    $pozisio = trim($_POST['pozisio'] ?? '');
+    $password2 = trim($_POST['password2'] ?? '');
+
+    error_log("Signin attempt: email={$email}, csrf_token=" . ($postedToken ?: 'none'));
+
+    if (!Seguritatea::verifyCSRFToken($postedToken)) {
+        error_log("CSRF failed in signin for {$email}");
+        $errorea = "Segurtasun-errorea. Saiatu berriro.";
         Seguritatea::logSeguritatea($conn, "CSRF_ATTACK", "Erregistro orrialdean", null);
+    } elseif (!Seguritatea::balioztaPasahitza($password)) {
+        $errorea = "Pasahitza ahula da.";
+    } elseif (Usuario::lortuEmailAgatik($conn, $email)) {
+        $errorea = "Emaila dagoeneko erregistratuta.";
+    } elseif ($password !== $password2) {
+        $errorea = "Pasahitzak ez datoz bat.";
     } else {
-        $izena = trim($_POST['izena'] ?? '');
-        $abizena = trim($_POST['abizena'] ?? '');
-        $nan = trim($_POST['nan'] ?? '');
-        $email = trim($_POST['email'] ?? '');
-        $password = $_POST['password'] ?? '';
-        $password2 = $_POST['password2'] ?? '';
-        $departamendua = trim($_POST['departamendua'] ?? '');
-        $pozisio = trim($_POST['pozisio'] ?? '');
-
-        // Email balioztapena
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $errorea = "Emaila ez da zuzena.";
-        }
-        // NAN balioztapena
-        elseif (!preg_match('/^\d{8}[A-Z]$/', strtoupper($nan))) {
-            $errorea = "NANa ez da zuzena (adibidea: 12345678A).";
-        }
-        // Pasahitzaren balioztapena
-        elseif ($pasahitz_erroak = Seguritatea::balioztaPasahitza($password)) {
-            $errorea = implode("<br>", $pasahitz_erroak);
-        }
-        elseif (!$izena || !$abizena || !$nan || !$email || !$password || !$password2) {
-            $errorea = "Eremu guztiak bete behar dira.";
-        }
-        elseif ($password !== $password2) {
-            $errorea = "Pasahitzak ez datoz bat.";
-        }
-        else {
-            // Erabiltzailea jada badagoen egiaztatzea
-            $erabiltzailea = Usuario::lortuEmailEdoNANegatik($conn, $email, $nan);
-            
-            if ($erabiltzailea !== null) {
-                $errorea = "Email edo NAN hori jada erregistratuta dago.";
-                Seguritatea::logSeguritatea($conn, "REGISTRO_DUPLICATE", $email, null);
-            } else {
-                // Pasahitza enkriptatzea
-                $hash = password_hash($password, PASSWORD_ARGON2ID);
-                $user = explode('@', $email)[0];
-                
-                // Erabiltzailea sortzea
-                $usuario = new Usuario($izena, $abizena, $nan, $email, $user, $hash, 'langilea');
-                
-                if ($usuario->sortu($conn)) {
-                    // Langilea sortzea
-                    $langilea = new Langilea($conn->insert_id, $departamendua, $pozisio);
-                    
-                    if ($langilea->sortu($conn)) {
-                        $arrakasta = true;
-                        Seguritatea::logSeguritatea($conn, "REGISTRO_EXITOSO", $email, $usuario->getId());
-                    } else {
-                        $errorea = "Errorea langilea sortzean.";
-                        Seguritatea::logSeguritatea($conn, "REGISTRO_ERROR_LANGILEA", $email, $usuario->getId());
-                    }
-                } else {
-                    $errorea = "Errorea erabiltzailea sortzean.";
-                    Seguritatea::logSeguritatea($conn, "REGISTRO_ERROR_USUARIO", $email, null);
-                }
-            }
+        $usuario = new Usuario($izena, $abizena, $nan, $email, $user, $password);
+        if ($usuario->sortu($conn)) {
+            $langilea = new Langilea($usuario->getId(), $departamendua, $pozisio);
+            $langilea->sortu($conn);
+            $_SESSION['usuario_id'] = $usuario->getId();
+            $_SESSION['usuario'] = ['admin' => false, 'email' => $email];
+            session_regenerate_id(true);
+            $_SESSION['csrf_token'] = Seguritatea::generateCSRFToken();
+            $csrf_token = $_SESSION['csrf_token'];
+            $arrakasta = true;
+        } else {
+            $errorea = "Ezin izan da erabiltzailea sortu.";
         }
     }
 }

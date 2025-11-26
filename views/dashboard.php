@@ -62,11 +62,11 @@ $nireSalmentakEncoded = ($hashids !== null) ? $hashids->encode(5) : 'nire_salmen
             <h2>🏭 <?php echo EMPRESA_IZENA; ?></h2>
         </div>
         <div class="navbar-menu">
-            <a href="<?php echo $dashboardEncoded; ?>.php" class="nav-link active">📊 Dashboard</a>
-            <a href="<?php echo $langileakEncoded; ?>.php" class="nav-link">👥 Langileak</a>
-            <a href="<?php echo $produktuakEncoded; ?>.php" class="nav-link">📦 Produktuak</a>
-            <a href="<?php echo $salmentakEncoded; ?>.php" class="nav-link">💰 Salmentak</a>
-            <a href="<?php echo $nireSalmentakEncoded; ?>.php" class="nav-link">📋 Nire salmentak</a>
+            <a href="/<?php echo $dashboardEncoded; ?>.php" class="nav-link active">📊 Dashboard</a>
+            <a href="/<?php echo $langileakEncoded; ?>.php" class="nav-link">👥 Langileak</a>
+            <a href="/<?php echo $produktuakEncoded; ?>.php" class="nav-link">📦 Produktuak</a>
+            <a href="/<?php echo $salmentakEncoded; ?>.php" class="nav-link">💰 Salmentak</a>
+            <a href="/<?php echo $nireSalmentakEncoded; ?>.php" class="nav-link">📋 Nire salmentak</a>
             <span class="navbar-user">
                 <?php echo htmlspecialchars($usuario_datos['izena'] . " " . $usuario_datos['abizena']); ?>
             </span>

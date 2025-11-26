@@ -21,7 +21,7 @@ class Salmenta {
         $this->kantitatea = $kantitatea;
         $this->prezioa_unitarioa = $prezioa_unitarioa;
         $this->prezioa_totala = $kantitatea * $prezioa_unitarioa;
-        $this->data_salmenta = date('Y-m-d');
+        $this->data_salmenta = date('Y-m-d H:i:s');
         $this->bezeroa_izena = $bezeroa_izena;
         $this->bezeroa_nif = $bezeroa_nif;
         $this->bezeroa_telefonoa = $bezeroa_telefonoa;
@@ -180,8 +180,8 @@ class Salmenta {
 
     // Ezabatzea
     public static function ezabatu($conn, $id) {
-        // Siempre usar prepared statements, incluso en fallback
-        $stmt = $conn->prepare("DELETE FROM langilea WHERE id = ?");
+        // Correct deletion target (salmenta), not langilea
+        $stmt = $conn->prepare("DELETE FROM salmenta WHERE id = ?");
         $stmt->bind_param("i", $id);
         $emaitza = $stmt->execute();
         $stmt->close();

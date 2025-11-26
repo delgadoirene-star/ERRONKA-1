@@ -1,4 +1,6 @@
 {
+  "name": "xabala/erronka-1",
+  "type": "project",
   "require": {
     "hashids/hashids": "^4.1"
   }

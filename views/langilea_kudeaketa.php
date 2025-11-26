@@ -1,16 +1,22 @@
 <?php
-require_once __DIR__ . '/../bootstrap.php';  // Loads global $hashids
+require_once __DIR__ . '/../bootstrap.php';
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../model/seguritatea.php';
 require_once __DIR__ . '/../model/langilea.php';
 require_once __DIR__ . '/../model/usuario.php';
 
-global $hashids;  // Access global Hashids
+global $hashids;
 
-if (!isset($_SESSION['usuario']) || !$_SESSION['usuario']['admin']) {
-    header('Location: ../index.php');
-    exit;
+if (($_SESSION['usuario_rol'] ?? '') !== 'admin') {
+    header('Location: ../index.php'); exit;
 }
+
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = Seguritatea::generateCSRFToken();
+}
+$csrf_token = $_SESSION['csrf_token'];
+
+$langileak = Langilea::lortuGuztiak($conn);
 ?>
 <!DOCTYPE html>
 <html lang="eu">
@@ -31,11 +37,11 @@ if (!isset($_SESSION['usuario']) || !$_SESSION['usuario']['admin']) {
                 // Generate encoded page names
                 $dashboardEncoded = ($hashids !== null) ? $hashids->encode(1) : 'dashboard';
                 ?>
-                <a href="<?php echo $dashboardEncoded; ?>.php" class="nav-link">Dashboard</a>
+                <a href="/<?php echo $dashboardEncoded; ?>.php" class="nav-link">Dashboard</a>
                 <a href="../controllers/AdminController.php?accion=langileak" class="nav-link active">Langileak</a>
                 <a href="../controllers/AdminController.php?accion=produktuak" class="nav-link">Produktuak</a>
                 <a href="../controllers/AdminController.php?accion=salmentak" class="nav-link">Salmentak</a>
-                <a href="logout.php" class="nav-link">Saioa itxi</a>
+                <a href="../logout.php" class="nav-link">Saioa itxi</a>
             </div>
         </div>
     </nav>
@@ -54,53 +60,24 @@ if (!isset($_SESSION['usuario']) || !$_SESSION['usuario']['admin']) {
 
         <div id="form-sortu" class="form-container" style="display:none; margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
             <h3>Langilea Sortu</h3>
-            <form method="POST" action="../controllers/AdminController.php?accion=langilea_sortu">
-                <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
-                
+            <form method="POST" action="../controllers/AdminController.php?action=add">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                 <div class="form-row">
-                    <div class="form-group">
-                        <label>Izena*</label>
-                        <input type="text" name="izena" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Abizena*</label>
-                        <input type="text" name="abizena" required>
-                    </div>
+                    <div class="form-group"><label>Izena*</label><input type="text" name="izena" required></div>
+                    <div class="form-group"><label>Abizena*</label><input type="text" name="abizena" required></div>
                 </div>
-                
                 <div class="form-row">
-                    <div class="form-group">
-                        <label>NAN* (12345678A)</label>
-                        <input type="text" name="nan" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Email*</label>
-                        <input type="email" name="email" required>
-                    </div>
+                    <div class="form-group"><label>NAN*</label><input type="text" name="nan" required></div>
+                    <div class="form-group"><label>Email*</label><input type="email" name="email" required></div>
                 </div>
-                
                 <div class="form-row">
-                    <div class="form-group">
-                        <label>Telefonoa</label>
-                        <input type="tel" name="telefono">
-                    </div>
-                    <div class="form-group">
-                        <label>Departamendua</label>
-                        <input type="text" name="departamendua">
-                    </div>
+                    <div class="form-group"><label>Telefonoa</label><input type="text" name="telefonoa"></div>
+                    <div class="form-group"><label>Departamendua</label><input type="text" name="departamendua"></div>
                 </div>
-                
                 <div class="form-row">
-                    <div class="form-group">
-                        <label>Pozisioa</label>
-                        <input type="text" name="pozisioa">
-                    </div>
-                    <div class="form-group">
-                        <label>Pasahitza*</label>
-                        <input type="password" name="pasahitza" required>
-                    </div>
+                    <div class="form-group"><label>Pozisioa</label><input type="text" name="pozisio"></div>
+                    <div class="form-group"><label>Pasahitza*</label><input type="password" name="pasahitza" required></div>
                 </div>
-                
                 <div class="form-actions">
                     <button type="submit" class="btn btn-success">Gorde</button>
                     <button type="button" class="btn btn-secondary" onclick="toggleFormSortu()">Utzi</button>
@@ -112,14 +89,8 @@ if (!isset($_SESSION['usuario']) || !$_SESSION['usuario']['admin']) {
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th>Izena</th>
-                        <th>Abizena</th>
-                        <th>NAN</th>
-                        <th>Email</th>
-                        <th>Telefonoa</th>
-                        <th>Departamendua</th>
-                        <th>Pozisioa</th>
-                        <th>Ekintzak</th>
+                        <th>Izena</th><th>Abizena</th><th>NAN</th><th>Email</th>
+                        <th>Telefonoa</th><th>Departamendua</th><th>Pozisioa</th><th>Ekintzak</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -129,12 +100,15 @@ if (!isset($_SESSION['usuario']) || !$_SESSION['usuario']['admin']) {
                             <td><?php echo htmlspecialchars($langilea['abizena']); ?></td>
                             <td><?php echo htmlspecialchars($langilea['nan']); ?></td>
                             <td><?php echo htmlspecialchars($langilea['email']); ?></td>
-                            <td><?php echo htmlspecialchars($langilea['telefono']); ?></td>
-                            <td><?php echo htmlspecialchars($langilea['departamendua']); ?></td>
-                            <td><?php echo htmlspecialchars($langilea['pozisioa']); ?></td>
+                            <td><?php echo htmlspecialchars($langilea['telefonoa'] ?? ''); ?></td>
+                            <td><?php echo htmlspecialchars($langilea['departamendua'] ?? ''); ?></td>
+                            <td><?php echo htmlspecialchars($langilea['pozisio'] ?? ''); ?></td>
                             <td>
-                                <a href="../controllers/AdminController.php?accion=langilea_editatu&id=<?php echo $langilea['id']; ?>" class="btn btn-warning btn-sm">Editatu</a>
-                                <a href="../controllers/AdminController.php?accion=langilea_ezeztatu&id=<?php echo $langilea['id']; ?>" class="btn btn-danger btn-sm" onclick="return confirm('Seguru zaude langilea ezabatu nahi duzula?');">Ezabatu</a>
+                                <form method="POST" action="../controllers/AdminController.php?action=delete" style="display:inline;">
+                                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
+                                    <input type="hidden" name="id" value="<?php echo (int)$langilea['id']; ?>">
+                                    <button class="btn btn-danger btn-sm" onclick="return confirm('Seguru zaude?');">Ezabatu</button>
+                                </form>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -142,15 +116,10 @@ if (!isset($_SESSION['usuario']) || !$_SESSION['usuario']['admin']) {
             </table>
         </div>
     </main>
-
     <script>
     function toggleFormSortu() {
         var form = document.getElementById('form-sortu');
-        if (form.style.display === 'none' || form.style.display === '') {
-            form.style.display = 'block';
-        } else {
-            form.style.display = 'none';
-        }
+        form.style.display = (form.style.display === 'block') ? 'none' : 'block';
     }
     </script>
 </body>

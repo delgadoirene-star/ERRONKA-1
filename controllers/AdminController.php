@@ -1,124 +1,88 @@
 <?php
-require_once __DIR__ . '/../bootstrap.php';  // Loads global $hashids
+require_once __DIR__ . '/../bootstrap.php';
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../model/seguritatea.php';
 require_once __DIR__ . '/../model/langilea.php';
+require_once __DIR__ . '/../model/usuario.php';
 
-global $hashids; 
+$action = $_GET['action'] ?? $_GET['accion'] ?? $_POST['action'] ?? '';
 
-if (!isset($_SESSION['usuario_id'])) {
-    header('Location: ../index.php');
-    exit;
-}
-
-$action = $_GET['action'] ?? $_POST['action'] ?? '';
-
-function redirect_back($msg = null) {
-    if ($msg) $_SESSION['flash_error'] = $msg;
-    header('Location: ../views/langileak.php');
-    exit;
+function back_with($type, $msg) {
+    $_SESSION["flash_$type"] = $msg;
+    header('Location: ../views/langileak.php'); exit;
 }
 
 try {
     if ($action === 'add' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!Seguritatea::verifyCSRFToken($_POST['csrf_token'] ?? '')) {
-            Seguritatea::logSeguritatea($conn, "CSRF_ATTACK", "langileak:add", $_SESSION['usuario_id']);
-            redirect_back('Segurtasun-errorea (CSRF).');
+            Seguritatea::logSeguritatea($conn, "CSRF_ATTACK", "admin:add", $_SESSION['usuario_id'] ?? null);
+            back_with('error', 'Segurtasun-errorea (CSRF).');
         }
 
-        // sanitize inputs (adjust names to your form fields)
-        $izena     = trim($_POST['izena'] ?? '');
-        $abizena   = trim($_POST['abizena'] ?? '');
-        $nif       = trim($_POST['nif'] ?? '');
-        $telefono  = trim($_POST['telefono'] ?? '');
-        $depart    = trim($_POST['departamento'] ?? '');
-        $posizioa  = trim($_POST['posizioa'] ?? '');
+        $izena = trim($_POST['izena'] ?? '');
+        $abizena = trim($_POST['abizena'] ?? '');
+        $nan = trim($_POST['nan'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        $telefonoa = trim($_POST['telefonoa'] ?? '');
+        $departamendua = trim($_POST['departamendua'] ?? '');
+        $pozisio = trim($_POST['pozisio'] ?? '');
+        $pasahitza = $_POST['pasahitza'] ?? '';
 
-        if (empty($izena) || empty($abizena)) {
-            redirect_back('Izena eta abizena beharrezkoak dira.');
+        if (!$izena || !$abizena || !$email || !$pasahitza) {
+            back_with('error', 'Izena, abizena, email eta pasahitza beharrezkoak dira.');
+        }
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            back_with('error', 'Emaila ez da baliogarria.');
+        }
+        if (!Seguritatea::balioztaPasahitza($pasahitza)) {
+            back_with('error', 'Pasahitza ahula da.');
+        }
+        if (Usuario::lortuEmailAgatik($conn, $email)) {
+            back_with('error', 'Emaila dagoeneko existitzen da.');
         }
 
-        // Prefer model method if exists
-        if (method_exists('Langilea', 'sortu')) {
-            // instantiate and call the instance method to avoid non-static call
-            $langilea = new Langilea($izena,$abizena,$nif,$telefono,$depart,$posizioa);
-            $ok = $langilea->sortu($conn, [
-                'izena' => $izena,
-                'abizena' => $abizena,
-                'nif' => $nif,
-                'telefono' => $telefono,
-                'departamento' => $depart,
-                'posizioa' => $posizioa,
-                'usuario_id' => $_SESSION['usuario_id'],
-            ]);
-        } else {
-            // fallback simple insert - adjust column names to your DB
-            $sql = "INSERT INTO langilea (izena, abizena, nif, telefono, departamento, posizioa, usuario_id, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, NOW())";
-            $stmt = $conn->prepare($sql);
-            $stmt->bind_param("sssssis", $izena, $abizena, $nif, $telefono, $depart, $posizioa, $_SESSION['usuario_id']);
-            $ok = $stmt->execute();
-            if ($stmt) $stmt->close();
+        $username = $email; // edo substr($email, 0, strpos($email,'@')) ?: $email;
+        $usuario = new Usuario($izena, $abizena, $nan, $email, $username, $pasahitza);
+
+        $conn->begin_transaction();
+        try {
+            if (!$usuario->sortu($conn)) {
+                throw new Exception('Ezin izan da erabiltzailea sortu.');
+            }
+            $lang = new Langilea($usuario->getId(), $departamendua, $pozisio, null, 0, $telefonoa);
+            if (!$lang->sortu($conn)) {
+                throw new Exception('Ezin izan da langilea sortu.');
+            }
+            $conn->commit();
+        } catch (Throwable $e) {
+            $conn->rollback();
+            throw $e;
         }
 
-        if ($ok) {
-            Seguritatea::logSeguritatea($conn, "LANGILEA_SORTU", "Langilea: $izena $abizena", $_SESSION['usuario_id']);
-            $_SESSION['flash_success'] = 'Langilea ondo sortu da.';
-            header('Location: ../views/langileak.php');
-            exit;
-        } else {
-            redirect_back('Errorea langilea sortzean.');
-        }
+        Seguritatea::logSeguritatea($conn, "LANGILEA_SORTU", "$izena $abizena", $_SESSION['usuario_id'] ?? null);
+        back_with('success', 'Langilea ondo sortu da.');
     }
 
-    if ($action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    if ($action === 'delete') {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            back_with('error', 'Metodoa ez da onartzen.');
+        }
         if (!Seguritatea::verifyCSRFToken($_POST['csrf_token'] ?? '')) {
-            Seguritatea::logSeguritatea($conn, "CSRF_ATTACK", "langileak:delete", $_SESSION['usuario_id']);
-            redirect_back('Segurtasun-errorea (CSRF).');
+            Seguritatea::logSeguritatea($conn, "CSRF_ATTACK", "admin:delete", $_SESSION['usuario_id'] ?? null);
+            back_with('error', 'Segurtasun-errorea (CSRF).');
         }
-
         $id = intval($_POST['id'] ?? 0);
-        if ($id <= 0) redirect_back('ID baliogabea.');
-
-        if (method_exists('Langilea', 'ezabatu')) {
-            $ok = Langilea::ezabatu($conn, $id);
+        if ($id <= 0) back_with('error', 'ID baliogabea.');
+        if (Langilea::desaktibatu($conn, $id)) {
+            Seguritatea::logSeguritatea($conn, "LANGILEA_EZABATU", "ID: $id", $_SESSION['usuario_id'] ?? null);
+            back_with('success', 'Langilea ezabatuta.');
         } else {
-            // Siempre usar prepared statements, incluso en fallback
-            $stmt = $conn->prepare("DELETE FROM langilea WHERE id = ?");
-            $stmt->bind_param("i", $id);
-            $ok = $stmt->execute();
-            $stmt->close();
+            back_with('error', 'Errorea ezabatzean.');
         }
-
-        if ($ok) {
-            Seguritatea::logSeguritatea($conn, "LANGILEA_EZABATU", "ID: $id", $_SESSION['usuario_id']);
-            $_SESSION['flash_success'] = 'Langilea ezabatuta.';
-        } else {
-            $_SESSION['flash_error'] = 'Errorea ezabatzean.';
-        }
-        header('Location: ../views/langileak.php');
-        exit;
     }
 
-    // Unknown action -> redirect to list
-    header('Location: ../views/langileak.php');
-    exit;
-
+    header('Location: ../views/langileak.php'); exit;
 } catch (Throwable $e) {
     error_log("AdminController error: " . $e->getMessage());
-    redirect_back('Barneko errorea.');
+    back_with('error', 'Barneko errorea.');
 }
-
-if (isset($_GET['ref'])) {
-    if ($hashids !== null && class_exists('\\Hashids\\Hashids')) {
-        $decoded = $hashids->decode($_GET['ref']);
-        $realId = $decoded[0] ?? null;
-        if (!$realId) { header("Location: ../views/dashboard.php"); exit; }
-        // Use $realId instead of $_POST['id'] if needed
-    } else {
-        error_log('Hashids not available; skipping ref decoding.');
-        header("Location: ../views/dashboard.php");
-        exit;
-    }
-}
-?>

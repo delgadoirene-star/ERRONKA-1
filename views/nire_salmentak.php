@@ -9,8 +9,6 @@ require_once __DIR__ . '/../model/seguritatea.php';
 
 global $hashids;  // Access global Hashids
 
-session_start();
-
 // Autentifikazioa egiaztatzea
 if (!isset($_SESSION['usuario_id'])) {
     header("Location: ../index.php");
@@ -55,6 +53,7 @@ $langileakEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? 
 $produktuakEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $hashids->encode(3) : 'produktuak';
 $salmentakEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $hashids->encode(4) : 'salmentak';
 $nireSalmentakEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $hashids->encode(5) : 'nire_salmentak';
+$profileEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $hashids->encode(6) : 'profile';
 
 ?>
 <!DOCTYPE html>
@@ -71,11 +70,11 @@ $nireSalmentakEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')
             <h2>🏭 <?php echo EMPRESA_IZENA; ?></h2>
         </div>
         <div class="navbar-menu">
-            <a href="<?php echo $dashboardEncoded; ?>.php" class="nav-link">📊 Dashboard</a>
-            <a href="<?php echo $langileakEncoded; ?>.php" class="nav-link">👥 Langileak</a>
-            <a href="<?php echo $produktuakEncoded; ?>.php" class="nav-link">📦 Produktuak</a>
-            <a href="<?php echo $salmentakEncoded; ?>.php" class="nav-link">💰 Salmentak</a>
-            <a href="<?php echo $nireSalmentakEncoded; ?>.php" class="nav-link active">📋 Nire salmentak</a>
+            <a href="/<?php echo $dashboardEncoded; ?>.php" class="nav-link">📊 Dashboard</a>
+            <a href="/<?php echo $langileakEncoded; ?>.php" class="nav-link">👥 Langileak</a>
+            <a href="/<?php echo $produktuakEncoded; ?>.php" class="nav-link">📦 Produktuak</a>
+            <a href="/<?php echo $salmentakEncoded; ?>.php" class="nav-link">💰 Salmentak</a>
+            <a href="/<?php echo $nireSalmentakEncoded; ?>.php" class="nav-link active">📋 Nire salmentak</a>
             <span class="navbar-user">
                 <?php echo htmlspecialchars($usuario_datos['izena'] . " " . $usuario_datos['abizena']); ?>
             </span>
@@ -142,8 +141,8 @@ $nireSalmentakEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')
         </div>
 
         <div class="action-buttons">
-            <a href="salmentak.php" class="btn btn-secondary">← Atzera salmentetara</a>
-            <a href="dashboard.php" class="btn btn-primary">Dashboarda itzuli</a>
+            <a href="/<?php echo $salmentakEncoded; ?>.php" class="btn btn-secondary">← Atzera salmentetara</a>
+            <a href="/<?php echo $dashboardEncoded; ?>.php" class="btn btn-primary">Dashboarda itzuli</a>
         </div>
     </div>
 
