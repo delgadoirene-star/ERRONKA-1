@@ -80,55 +80,51 @@ $user = Usuario::lortuIdAgatik($conn, $userId) ?: [];
 
 $homeLink      = function_exists('page_link') ? page_link(9,'home')      : '/index.php';
 $dashboardLink = function_exists('page_link') ? page_link(1,'dashboard') : '/views/dashboard.php';
+$pageTitle = "Profila";
+$active = '';
+require __DIR__ . '/partials/header.php';
 ?>
-<link rel="stylesheet" href="/style/style.css">
-<div class="page-wrapper" style="max-width:900px;margin:0 auto;padding:20px;">
-    <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:12px;">
-        <a href="<?= htmlspecialchars($dashboardLink) ?>" class="btn">Hasiera</a>
-        <a href="/logout.php" class="btn btn-secondary">Saioa amaitu</a>
-    </div>
+<?php if ($mensaje): ?>
+    <div class="alert alert-success">✓ <?= htmlspecialchars($mensaje) ?></div>
+<?php endif; ?>
+<?php if ($errorea): ?>
+    <div class="alert alert-error">⚠ <?= htmlspecialchars($errorea) ?></div>
+<?php endif; ?>
 
-    <?php if ($mensaje): ?>
-        <div class="alert alert-success">✓ <?= htmlspecialchars($mensaje) ?></div>
-    <?php endif; ?>
-    <?php if ($errorea): ?>
-        <div class="alert alert-error">⚠ <?= htmlspecialchars($errorea) ?></div>
-    <?php endif; ?>
-
-    <div class="card" style="margin-bottom:24px;">
-        <h2 style="text-align:center;">Datu pertsonalak</h2>
-        <div style="text-align:center;margin-bottom:16px;">
-            <p><strong>Izena:</strong> <?= htmlspecialchars(($user['izena'] ?? '') . ' ' . ($user['abizena'] ?? '')) ?></p>
-            <p><strong>NAN:</strong> <?= htmlspecialchars($user['nan'] ?? '-') ?></p>
-            <p><strong>Jaioteguna:</strong> <?= htmlspecialchars($user['jaiotegun'] ?? '-') ?></p>
-            <p><strong>Email:</strong> <?= htmlspecialchars($user['email'] ?? '-') ?></p>
-            <p><strong>IBAN:</strong> <?= htmlspecialchars($user['iban'] ?? '-') ?></p>
-        </div>
-        <form method="POST" style="max-width:420px;margin:0 auto;">
-            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
-            <label>Izena:</label>
-            <input type="text" name="izena" required value="<?= htmlspecialchars($user['izena'] ?? '') ?>" class="input" style="width:100%;margin-bottom:10px;">
-            <label>Abizena:</label>
-            <input type="text" name="abizena" required value="<?= htmlspecialchars($user['abizena'] ?? '') ?>" class="input" style="width:100%;margin-bottom:10px;">
-            <label>NAN:</label>
-            <input type="text" name="nan" required value="<?= htmlspecialchars($user['nan'] ?? '') ?>" class="input" style="width:100%;margin-bottom:10px;">
-            <label>Jaioteguna:</label>
-            <input type="date" name="jaiotegun" value="<?= htmlspecialchars($user['jaiotegun'] ?? '') ?>" class="input" style="width:100%;margin-bottom:10px;">
-            <button type="submit" name="actualizar_datos" class="btn" style="width:100%;margin-top:12px;">Datuak eguneratu</button>
-        </form>
+<div class="card" style="margin-bottom:24px;max-width:900px;">
+    <h2 style="text-align:center;">Datu pertsonalak</h2>
+    <div style="text-align:center;margin-bottom:16px;">
+        <p><strong>Izena:</strong> <?= htmlspecialchars(($user['izena'] ?? '') . ' ' . ($user['abizena'] ?? '')) ?></p>
+        <p><strong>NAN:</strong> <?= htmlspecialchars($user['nan'] ?? '-') ?></p>
+        <p><strong>Jaioteguna:</strong> <?= htmlspecialchars($user['jaiotegun'] ?? '-') ?></p>
+        <p><strong>Email:</strong> <?= htmlspecialchars($user['email'] ?? '-') ?></p>
+        <p><strong>IBAN:</strong> <?= htmlspecialchars($user['iban'] ?? '-') ?></p>
     </div>
-
-    <div class="card">
-        <h2 style="text-align:center;">Kredentzialak</h2>
-        <form method="POST" style="max-width:420px;margin:0 auto;">
-            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
-            <label>Erabiltzailea:</label>
-            <input type="text" name="nuevo_user" required value="<?= htmlspecialchars($user['user'] ?? '') ?>" class="input" style="width:100%;margin-bottom:10px;">
-            <label>Pasahitz berria:</label>
-            <input type="password" name="nuevo_password" required class="input" style="width:100%;margin-bottom:10px;">
-            <label>Berretsi pasahitza:</label>
-            <input type="password" name="confirmar_password" required class="input" style="width:100%;margin-bottom:10px;">
-            <button type="submit" name="actualizar_credenciales" class="btn" style="width:100%;margin-top:12px;">Kredentzialak eguneratu</button>
-        </form>
-    </div>
+    <form method="POST" style="max-width:420px;margin:0 auto;">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
+        <label>Izena:</label>
+        <input type="text" name="izena" required value="<?= htmlspecialchars($user['izena'] ?? '') ?>" class="input" style="width:100%;margin-bottom:10px;">
+        <label>Abizena:</label>
+        <input type="text" name="abizena" required value="<?= htmlspecialchars($user['abizena'] ?? '') ?>" class="input" style="width:100%;margin-bottom:10px;">
+        <label>NAN:</label>
+        <input type="text" name="nan" required value="<?= htmlspecialchars($user['nan'] ?? '') ?>" class="input" style="width:100%;margin-bottom:10px;">
+        <label>Jaioteguna:</label>
+        <input type="date" name="jaiotegun" value="<?= htmlspecialchars($user['jaiotegun'] ?? '') ?>" class="input" style="width:100%;margin-bottom:10px;">
+        <button type="submit" name="actualizar_datos" class="btn" style="width:100%;margin-top:12px;">Datuak eguneratu</button>
+    </form>
 </div>
+
+<div class="card" style="max-width:900px;">
+    <h2 style="text-align:center;">Kredentzialak</h2>
+    <form method="POST" style="max-width:420px;margin:0 auto;">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
+        <label>Erabiltzailea:</label>
+        <input type="text" name="nuevo_user" required value="<?= htmlspecialchars($user['user'] ?? '') ?>" class="input" style="width:100%;margin-bottom:10px;">
+        <label>Pasahitz berria:</label>
+        <input type="password" name="nuevo_password" required class="input" style="width:100%;margin-bottom:10px;">
+        <label>Berretsi pasahitza:</label>
+        <input type="password" name="confirmar_password" required class="input" style="width:100%;margin-bottom:10px;">
+        <button type="submit" name="actualizar_credenciales" class="btn" style="width:100%;margin-top:12px;">Kredentzialak eguneratu</button>
+    </form>
+</div>
+<?php require __DIR__ . '/partials/footer.php'; ?>

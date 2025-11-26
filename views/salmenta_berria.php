@@ -36,41 +36,43 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
 $produktua = $conn->query("SELECT id, izena FROM produktua ORDER BY izena ASC")->fetch_all(MYSQLI_ASSOC);
 $salmentakLink = function_exists('page_link') ? page_link(4, 'salmentak') : '/views/salmentak.php';
 $dashboardLink = function_exists('page_link') ? page_link(1, 'dashboard') : '/views/dashboard.php';
+$pageTitle = "Salmenta berria";
+$active = 'salmentak';
+require __DIR__ . '/partials/header.php';
 ?>
-<link rel="stylesheet" href="/style/style.css">
-<div class="page-wrapper" style="max-width:700px;margin:0 auto;padding:20px;">
-    <h2>Salmenta berria</h2>
-    <?php if($mezua):?><div class="alert alert-success"><?=htmlspecialchars($mezua)?></div><?php endif;?>
-    <?php if($errorea):?><div class="alert alert-error"><?=htmlspecialchars($errorea)?></div><?php endif;?>
-    <form method="POST">
-        <input type="hidden" name="csrf_token" value="<?=htmlspecialchars($csrf)?>">
-        <label>Produktua:</label>
-        <select name="produktu_id" required style="width:100%;margin-bottom:10px;">
-            <option value="">Aukeratu...</option>
-            <?php foreach($produktua as $p):?>
-            <option value="<?=$p['id']?>"><?=htmlspecialchars($p['izena'])?></option>
-            <?php endforeach; ?>
-        </select>
-        <label>Kantitatea:</label>
-        <input type="number" name="kantitatea" value="1" min="1" style="width:100%;margin-bottom:10px;">
-        <label>Prezio unitarioa:</label>
-        <input type="number" step="0.01" name="prezioa_unitarioa" style="width:100%;margin-bottom:10px;">
-        <label>Prezio totala:</label>
-        <input type="number" step="0.01" name="prezioa_totala" style="width:100%;margin-bottom:10px;">
-        <label>Data:</label>
-        <input type="date" name="data_salmenta" value="<?=date('Y-m-d')?>" style="width:100%;margin-bottom:10px;">
-        <label>Bezero izena:</label>
-        <input name="bezeroa_izena" style="width:100%;margin-bottom:10px;">
-        <label>Bezero NIF:</label>
-        <input name="bezeroa_nif" style="width:100%;margin-bottom:10px;">
-        <label>Telefonoa:</label>
-        <input name="bezeroa_telefonoa" style="width:100%;margin-bottom:10px;">
-        <label>Oharra:</label>
-        <textarea name="oharra" style="width:100%;margin-bottom:14px;"></textarea>
-        <button class="btn" style="width:100%;">Gorde</button>
-    </form>
-    <div style="display:flex;gap:8px;margin-top:12px;">
-        <a href="<?= htmlspecialchars($salmentakLink) ?>" class="btn btn-secondary">← Salmentak</a>
-        <a href="<?= htmlspecialchars($dashboardLink) ?>" class="btn btn-secondary">Dashboard</a>
-    </div>
+<div class="page-header"><h1>📝 Salmenta berria</h1></div>
+<?php if($mezua):?><div class="alert alert-success"><?=htmlspecialchars($mezua)?></div><?php endif;?>
+<?php if($errorea):?><div class="alert alert-error"><?=htmlspecialchars($errorea)?></div><?php endif;?>
+
+<form method="POST" class="form" style="max-width:700px;">
+    <input type="hidden" name="csrf_token" value="<?=htmlspecialchars($csrf)?>">
+    <label>Produktua:</label>
+    <select name="produktu_id" required style="width:100%;margin-bottom:10px;">
+        <option value="">Aukeratu...</option>
+        <?php foreach($produktua as $p):?>
+        <option value="<?=$p['id']?>"><?=htmlspecialchars($p['izena'])?></option>
+        <?php endforeach; ?>
+    </select>
+    <label>Kantitatea:</label>
+    <input type="number" name="kantitatea" value="1" min="1" style="width:100%;margin-bottom:10px;">
+    <label>Prezio unitarioa:</label>
+    <input type="number" step="0.01" name="prezioa_unitarioa" style="width:100%;margin-bottom:10px;">
+    <label>Prezio totala:</label>
+    <input type="number" step="0.01" name="prezioa_totala" style="width:100%;margin-bottom:10px;">
+    <label>Data:</label>
+    <input type="date" name="data_salmenta" value="<?=date('Y-m-d')?>" style="width:100%;margin-bottom:10px;">
+    <label>Bezero izena:</label>
+    <input name="bezeroa_izena" style="width:100%;margin-bottom:10px;">
+    <label>Bezero NIF:</label>
+    <input name="bezeroa_nif" style="width:100%;margin-bottom:10px;">
+    <label>Telefonoa:</label>
+    <input name="bezeroa_telefonoa" style="width:100%;margin-bottom:10px;">
+    <label>Oharra:</label>
+    <textarea name="oharra" style="width:100%;margin-bottom:14px;"></textarea>
+    <button class="btn" style="width:100%;">Gorde</button>
+</form>
+<div style="display:flex;gap:8px;margin-top:12px;">
+    <a href="<?= htmlspecialchars($salmentakLink) ?>" class="btn btn-secondary">← Salmentak</a>
+    <a href="<?= htmlspecialchars($dashboardLink) ?>" class="btn btn-secondary">Dashboard</a>
 </div>
+<?php require __DIR__ . '/partials/footer.php'; ?>

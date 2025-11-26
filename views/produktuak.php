@@ -52,65 +52,66 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
 
 $produktuak = Produktua::all($conn);
 $dashboardLink = function_exists('page_link') ? page_link(1, 'dashboard') : '/views/dashboard.php';
+$pageTitle = "Produktuak";
+$active = 'produktuak';
+require __DIR__ . '/partials/header.php';
 ?>
-<link rel="stylesheet" href="/style/style.css">
-<div class="page-wrapper" style="max-width:1000px;margin:0 auto;padding:20px;">
-    <h2>Produktuak</h2>
-    <?php if($mezua):?><div class="alert alert-success"><?=htmlspecialchars($mezua)?></div><?php endif;?>
-    <?php if($errorea):?><div class="alert alert-error"><?=htmlspecialchars($errorea)?></div><?php endif;?>
+<div class="page-header"><h1>📦 Produktuak</h1></div>
 
-    <form method="POST" style="margin-bottom:20px;">
-        <input type="hidden" name="csrf_token" value="<?=htmlspecialchars($csrf)?>">
-        <input type="hidden" name="action" value="create">
-        <input name="izena" placeholder="Izena" required>
-        <input name="deskripzioa" placeholder="Deskripzioa">
-        <input name="kategoria" placeholder="Kategoria">
-        <input name="prezioa" type="number" placeholder="Prezioa">
-        <input name="stock" type="number" placeholder="Stock">
-        <input name="stock_minimo" type="number" placeholder="Minimoa">
-        <button class="btn">Gehitu</button>
-    </form>
+<?php if($mezua):?><div class="alert alert-success"><?=htmlspecialchars($mezua)?></div><?php endif;?>
+<?php if($errorea):?><div class="alert alert-error"><?=htmlspecialchars($errorea)?></div><?php endif;?>
 
-    <table class="table" style="width:100%;border-collapse:collapse;">
-        <thead><tr><th>ID</th><th>Izena</th><th>Kategoria</th><th>Prezioa</th><th>Stock</th><th></th></tr></thead>
-        <tbody>
-        <?php foreach($produktuak as $p):?>
-            <tr>
-                <td><?=htmlspecialchars($p['id'])?></td>
-                <td><?=htmlspecialchars($p['izena'])?></td>
-                <td><?=htmlspecialchars($p['kategoria'])?></td>
-                <td><?=htmlspecialchars($p['prezioa'])?></td>
-                <td><?=htmlspecialchars($p['stock'])?></td>
-                <td style="white-space:nowrap;">
-                    <form method="POST" style="display:inline;">
+<form method="POST" class="form" style="margin-bottom:20px;">
+    <input type="hidden" name="csrf_token" value="<?=htmlspecialchars($csrf)?>">
+    <input type="hidden" name="action" value="create">
+    <input name="izena" placeholder="Izena" required>
+    <input name="deskripzioa" placeholder="Deskripzioa">
+    <input name="kategoria" placeholder="Kategoria">
+    <input name="prezioa" type="number" step="0.01" placeholder="Prezioa">
+    <input name="stock" type="number" placeholder="Stock">
+    <input name="stock_minimo" type="number" placeholder="Minimoa">
+    <button class="btn">Gehitu</button>
+</form>
+
+<table class="data-table">
+    <thead><tr><th>ID</th><th>Izena</th><th>Kategoria</th><th>Prezioa</th><th>Stock</th><th></th></tr></thead>
+    <tbody>
+    <?php foreach($produktuak as $p):?>
+        <tr>
+            <td><?=htmlspecialchars($p['id'])?></td>
+            <td><?=htmlspecialchars($p['izena'])?></td>
+            <td><?=htmlspecialchars($p['kategoria'])?></td>
+            <td><?=htmlspecialchars($p['prezioa'])?></td>
+            <td><?=htmlspecialchars($p['stock'])?></td>
+            <td style="white-space:nowrap;">
+                <form method="POST" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="<?=$csrf?>">
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="id" value="<?=htmlspecialchars($p['id'])?>">
+                    <button class="btn btn-danger" onclick="return confirm('Ezabatu?')">Ezabatu</button>
+                </form>
+                <details style="display:inline;">
+                    <summary class="btn btn-secondary">Editatu</summary>
+                    <form method="POST" style="background:#f7f7f7;padding:8px;display:block;">
                         <input type="hidden" name="csrf_token" value="<?=$csrf?>">
-                        <input type="hidden" name="action" value="delete">
+                        <input type="hidden" name="action" value="update">
                         <input type="hidden" name="id" value="<?=htmlspecialchars($p['id'])?>">
-                        <button class="btn btn-danger" onclick="return confirm('Ezabatu?')">Ezabatu</button>
+                        <input name="izena" value="<?=htmlspecialchars($p['izena'])?>">
+                        <input name="deskripzioa" value="<?=htmlspecialchars($p['deskripzioa'])?>">
+                        <input name="kategoria" value="<?=htmlspecialchars($p['kategoria'])?>">
+                        <input name="prezioa" type="number" step="0.01" value="<?=htmlspecialchars($p['prezioa'])?>">
+                        <input name="stock" type="number" value="<?=htmlspecialchars($p['stock'])?>">
+                        <input name="stock_minimo" type="number" value="<?=htmlspecialchars($p['stock_minimo'])?>">
+                        <button class="btn btn-secondary">Gorde</button>
                     </form>
-                    <!-- Simple inline edit -->
-                    <details style="display:inline;">
-                        <summary class="btn btn-secondary">Editatu</summary>
-                        <form method="POST" style="background:#f7f7f7;padding:8px;display:block;">
-                            <input type="hidden" name="csrf_token" value="<?=$csrf?>">
-                            <input type="hidden" name="action" value="update">
-                            <input type="hidden" name="id" value="<?=htmlspecialchars($p['id'])?>">
-                            <input name="izena" value="<?=htmlspecialchars($p['izena'])?>">
-                            <input name="deskripzioa" value="<?=htmlspecialchars($p['deskripzioa'])?>">
-                            <input name="kategoria" value="<?=htmlspecialchars($p['kategoria'])?>">
-                            <input name="prezioa" type="number" value="<?=htmlspecialchars($p['prezioa'])?>">
-                            <input name="stock" type="number" value="<?=htmlspecialchars($p['stock'])?>">
-                            <input name="stock_minimo" type="number" value="<?=htmlspecialchars($p['stock_minimo'])?>">
-                            <button class="btn btn-secondary">Gorde</button>
-                        </form>
-                    </details>
-                </td>
-            </tr>
-        <?php endforeach;?>
-        </tbody>
-    </table>
+                </details>
+            </td>
+        </tr>
+    <?php endforeach;?>
+    </tbody>
+</table>
 
-    <div style="margin-top:12px;">
-        <a href="<?= htmlspecialchars($dashboardLink) ?>" class="btn btn-secondary">← Dashboard</a>
-    </div>
+<div style="margin-top:12px;">
+    <a href="<?= htmlspecialchars($dashboardLink) ?>" class="btn btn-secondary">← Dashboard</a>
 </div>
+<?php require __DIR__ . '/partials/footer.php'; ?>

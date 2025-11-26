@@ -38,118 +38,74 @@ $nireSalmentakLink = function_exists('page_link') ? page_link(5, 'nire_salmentak
 
 // Optional: current user display
 $usuario_datos = class_exists('Usuario') && isset($conn) ? (Usuario::lortuIdAgatik($conn, $userId) ?: ['izena'=>'','abizena'=>'']) : ['izena'=>'','abizena'=>''];
+$pageTitle = "Nire Salmentak";
+$active = 'nire_salmentak';
+require __DIR__ . '/partials/header.php';
 ?>
-<!DOCTYPE html>
-<html lang="eu">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nire Salmentak - <?php echo EMPRESA_IZENA; ?></title>
-    <link rel="stylesheet" href="<?= htmlspecialchars($cssHref) ?>">
-</head>
-<body>
-    <div class="navbar">
-        <div class="navbar-brand">
-            <h2>🏭 <?= htmlspecialchars(EMPRESA_IZENA) ?></h2>
-        </div>
-        <div class="navbar-menu">
-            <a href="<?= htmlspecialchars($dashboardLink) ?>" class="nav-link">📊 Dashboard</a>
-            <a href="<?= htmlspecialchars($langileakLink) ?>" class="nav-link">👥 Langileak</a>
-            <a href="<?= htmlspecialchars($produktuakLink) ?>" class="nav-link">📦 Produktuak</a>
-            <a href="<?= htmlspecialchars($salmentakLink) ?>" class="nav-link">💰 Salmentak</a>
-            <a href="<?= htmlspecialchars($nireSalmentakLink) ?>" class="nav-link active">📋 Nire salmentak</a>
-            <span class="navbar-user">
-                <?= htmlspecialchars(trim(($usuario_datos['izena'] ?? '') . ' ' . ($usuario_datos['abizena'] ?? ''))) ?>
-            </span>
-            <a href="/logout.php" class="nav-link logout">🚪 Itxi saioa</a>
-        </div>
+<div class="page-header">
+    <h1>📋 Nire Salmentak</h1>
+    <p>Zure salmentak historikoa - <?= htmlspecialchars(($usuario_datos['izena'] ?? '') . " " . ($usuario_datos['abizena'] ?? '')) ?></p>
+</div>
+
+<div class="dashboard-card" style="margin-bottom: 2rem; border-left: 4px solid #10b981;">
+    <div class="card-icon">💰</div>
+    <div class="card-content">
+        <h3><?= number_format($salmenta_guztira, 2) ?>€</h3>
+        <p>Salmentaren guztira</p>
     </div>
+</div>
 
-    <div class="container">
-        <div class="page-header">
-            <h1>📋 Nire Salmentak</h1>
-            <p>Zure salmentak historikoa - <?php echo htmlspecialchars($usuario_datos['izena'] . " " . $usuario_datos['abizena']); ?></p>
+<div class="table-section">
+    <h2>Zure salmentak</h2>
+    <?php if (count($salmentak) > 0): ?>
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Data</th>
+                <th>Produktua</th>
+                <th>Kategoria</th>
+                <th>Kantitatea</th>
+                <th>Prezioa unitarioa</th>
+                <th>Prezioa totala</th>
+                <th>Bezeroa</th>
+                <th>Bezeroa telefono</th>
+            </tr>
+            </thead>
+            <tbody>
+            <?php foreach ($salmentak as $salmenta): ?>
+                <tr>
+                    <td><?= $salmenta['data_salmenta'] ?></td>
+                    <td><?= htmlspecialchars($salmenta['produktu_izena']) ?></td>
+                    <td><?= htmlspecialchars($salmenta['kategoria'] ?? '-') ?></td>
+                    <td><?= $salmenta['kantitatea'] ?></td>
+                    <td><?= number_format($salmenta['prezioa_unitarioa'], 2) ?>€</td>
+                    <td><strong><?= number_format($salmenta['prezioa_totala'], 2) ?>€</strong></td>
+                    <td><?= htmlspecialchars($salmenta['bezeroa_izena'] ?? '-') ?></td>
+                    <td><?= htmlspecialchars($salmenta['bezeroa_telefonoa'] ?? '-') ?></td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+
+        <div class="summary-section">
+            <h3>Laburpena</h3>
+            <p><strong>Guztirako salmenta: <?= number_format($salmenta_guztira, 2) ?>€</strong></p>
+            <p>Transakzioak: <?= count($salmentak) ?></p>
+            <p>Batez bestekoa transakziokoa: <?= count($salmentak) > 0 ? number_format($salmenta_guztira / count($salmentak), 2) : '0.00' ?>€</p>
         </div>
+    <?php else: ?>
+        <p class="no-data">Ez duzu salmentarik egina oraindik.</p>
+    <?php endif; ?>
+</div>
 
-        <div class="dashboard-card" style="margin-bottom: 2rem; border-left: 4px solid #10b981;">
-            <div class="card-icon">💰</div>
-            <div class="card-content">
-                <h3><?php echo number_format($salmenta_guztira, 2); ?>€</h3>
-                <p>Salmentaren guztira</p>
-            </div>
-        </div>
+<div class="action-buttons">
+    <a href="<?= htmlspecialchars($salmentakLink) ?>" class="btn btn-secondary">← Atzera salmentetara</a>
+    <a href="<?= htmlspecialchars($dashboardLink) ?>" class="btn btn-primary">Dashboarda itzuli</a>
+</div>
 
-        <div class="table-section">
-            <h2>Zure salmentak</h2>
-            
-            <?php if (count($salmentak) > 0): ?>
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Data</th>
-                            <th>Produktua</th>
-                            <th>Kategoria</th>
-                            <th>Kantitatea</th>
-                            <th>Prezioa unitarioa</th>
-                            <th>Prezioa totala</th>
-                            <th>Bezeroa</th>
-                            <th>Bezeroa telefono</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($salmentak as $salmenta): ?>
-                            <tr>
-                                <td><?php echo $salmenta['data_salmenta']; ?></td>
-                                <td><?php echo htmlspecialchars($salmenta['produktu_izena']); ?></td>
-                                <td><?php echo htmlspecialchars($salmenta['kategoria'] ?? '-'); ?></td>
-                                <td><?php echo $salmenta['kantitatea']; ?></td>
-                                <td><?php echo number_format($salmenta['prezioa_unitarioa'], 2); ?>€</td>
-                                <td><strong><?php echo number_format($salmenta['prezioa_totala'], 2); ?>€</strong></td>
-                                <td><?php echo htmlspecialchars($salmenta['bezeroa_izena'] ?? '-'); ?></td>
-                                <td><?php echo htmlspecialchars($salmenta['bezeroa_telefonoa'] ?? '-'); ?></td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-
-                <div class="summary-section">
-                    <h3>Laburpena</h3>
-                    <p><strong>Guztirako salmenta: <?php echo number_format($salmenta_guztira, 2); ?>€</strong></p>
-                    <p>Transakzioak: <?php echo count($salmentak); ?></p>
-                    <p>Batez bestekoa transakziokoa: <?php echo count($salmentak) > 0 ? number_format($salmenta_guztira / count($salmentak), 2) : '0.00'; ?>€</p>
-                </div>
-            <?php else: ?>
-                <p class="no-data">Ez duzu salmentarik egina oraindik.</p>
-            <?php endif; ?>
-        </div>
-
-        <div class="action-buttons">
-            <a href="<?php echo htmlspecialchars($salmentakLink); ?>" class="btn btn-secondary">← Atzera salmentetara</a>
-            <a href="<?php echo htmlspecialchars($dashboardLink); ?>" class="btn btn-primary">Dashboarda itzuli</a>
-        </div>
-    </div>
-
-    <style>
-        .action-buttons {
-            display: flex;
-            gap: 1rem;
-            margin-top: 2rem;
-            justify-content: center;
-        }
-
-        .action-buttons .btn {
-            min-width: 150px;
-        }
-
-        @media (max-width: 768px) {
-            .action-buttons {
-                flex-direction: column;
-            }
-
-            .action-buttons .btn {
-                width: 100%;
-            }
-        }
-    </style>
-</body>
-</html>
+<style>
+.action-buttons{display:flex;gap:1rem;margin-top:2rem;justify-content:center;}
+.action-buttons .btn{min-width:150px;}
+@media (max-width:768px){.action-buttons{flex-direction:column}.action-buttons .btn{width:100%}}
+</style>
+<?php require __DIR__ . '/partials/footer.php'; ?>
