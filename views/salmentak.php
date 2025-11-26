@@ -50,10 +50,11 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
 }
 
 $salmentak = $isAdmin
-    ? Salmenta::all($conn)
-    : array_filter(Salmenta::all($conn), fn($r)=> (int)$r['langile_id']===$userId);
+    ? Salmenta::lortuGuztiak($conn)                     // joined, includes produktu_izena
+    : Salmenta::lortuGuztiak($conn, $userId);           // joined, filtered by current user
 
 $produktua = $conn->query("SELECT id, izena FROM produktua ORDER BY izena ASC")->fetch_all(MYSQLI_ASSOC);
+$dashboardLink = function_exists('page_link') ? page_link(1, 'dashboard') : '/views/dashboard.php';
 ?>
 <link rel="stylesheet" href="/style/style.css">
 <div class="page-wrapper" style="max-width:1100px;margin:0 auto;padding:20px;">
@@ -110,5 +111,10 @@ $produktua = $conn->query("SELECT id, izena FROM produktua ORDER BY izena ASC")-
             <?php endforeach;?>
         </tbody>
     </table>
+
+    <!-- Optional footer actions -->
+    <div style="margin-top:12px;">
+        <a href="<?= htmlspecialchars($dashboardLink) ?>" class="btn btn-secondary">← Dashboard</a>
+    </div>
 </div>
 

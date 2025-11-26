@@ -19,6 +19,8 @@ $csrf_token = $_SESSION['csrf_token'];
 
 // If DB not ready, show a helpful message and skip DB operations
 global $db_ok;
+// Ensure $conn exists if provided by bootstrap.php
+global $conn;
 if (empty($db_ok)) {
     // On POST, avoid attempting DB calls (prevent fatal errors)
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -29,24 +31,30 @@ if (empty($db_ok)) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($db_ok)) {
     $postedToken = $_POST['csrf_token'] ?? '';
-    $email = trim($_POST['email'] ?? '');
+    // Normalize and trim inputs to avoid undefined index and odd whitespace
+    $email = strtolower(trim($_POST['email'] ?? ''));
     $izena = trim($_POST['izena'] ?? '');
     $abizena = trim($_POST['abizena'] ?? '');
-    $nan = trim($_POST['nan'] ?? '');
+    $nan = strtoupper(trim($_POST['nan'] ?? ''));
     $user = trim($_POST['user'] ?? '');
-    $password = trim($_POST['password'] ?? '');
+    $password = (string)($_POST['password'] ?? '');
     $departamendua = trim($_POST['departamendua'] ?? '');
     $pozisio = trim($_POST['pozisio'] ?? '');
-    $password2 = trim($_POST['password2'] ?? '');
+    $password2 = (string)($_POST['password2'] ?? '');
 
     error_log("Signin attempt: email={$email}, csrf_token=" . ($postedToken ?: 'none'));
 
     if (!Seguritatea::verifyCSRFToken($postedToken)) {
         error_log("CSRF failed in signin for {$email}");
         $errorea = "Segurtasun-errorea. Saiatu berriro.";
-        Seguritatea::logSeguritatea($conn, "CSRF_ATTACK", "Erregistro orrialdean", null);
+        // Guard logging when DB connection may be missing
+        if (!empty($conn)) {
+            Seguritatea::logSeguritatea($conn, "CSRF_ATTACK", "Erregistro orrialdean", null);
+        }
     } elseif (!Seguritatea::balioztaPasahitza($password)) {
         $errorea = "Pasahitza ahula da.";
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $errorea = "Email formatu okerra.";
     } elseif (Usuario::lortuEmailAgatik($conn, $email)) {
         $errorea = "Emaila dagoeneko erregistratuta.";
     } elseif ($password !== $password2) {
@@ -59,6 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($db_ok)) {
             $_SESSION['usuario_id'] = $usuario->getId();
             $_SESSION['usuario'] = ['admin' => false, 'email' => $email];
             session_regenerate_id(true);
+            // Rotate CSRF token after state change
             $_SESSION['csrf_token'] = Seguritatea::generateCSRFToken();
             $csrf_token = $_SESSION['csrf_token'];
             $arrakasta = true;
@@ -74,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($db_ok)) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Erregistratu - <?php echo EMPRESA_IZENA; ?></title>
-    <link rel="stylesheet" href="style/style.css">
+    <link rel="stylesheet" href="/style/style.css">
 </head>
 <body class="register-page">
     <div class="register-container">

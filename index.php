@@ -22,7 +22,9 @@ if (!headers_sent()) {
 require_once __DIR__ . '/controllers/HomeController.php';
 
 if (isset($_SESSION['usuario_id'])) {
-    require_once __DIR__ . '/views/dashboard.php';
+    // Redirect to router-encoded dashboard link
+    $target = function_exists('page_link') ? page_link(1, 'dashboard') : '/views/dashboard.php';
+    redirect_to($target);
 } else {
     // Render view
     require_once __DIR__ . '/views/home.php';

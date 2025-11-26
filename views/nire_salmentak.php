@@ -3,6 +3,7 @@ require_once __DIR__ . '/../bootstrap.php';
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../model/salmenta.php';
 require_once __DIR__ . '/../model/seguritatea.php';
+require_once __DIR__ . '/../model/usuario.php'; // added to use Usuario::lortuIdAgatik
 
 global $db_ok, $conn;
 if (!$db_ok || !$conn) { echo '<div class="alert alert-error">DB ez dago prest.</div>'; return; }
@@ -23,8 +24,9 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
     }
 }
 
-$all = Salmenta::all($conn);
-$mine = array_filter($all, fn($r)=> (int)$r['langile_id']===$userId);
+// Replace raw all/filter with joined helper
+$salmentak = Salmenta::lortuGuztiak($conn, $userId);
+$salmenta_guztira = Salmenta::kalkulaSalmentaGuztira($conn, $userId);
 
 // Add missing navbar link variables and absolute CSS path
 $cssHref           = "/style/style.css";

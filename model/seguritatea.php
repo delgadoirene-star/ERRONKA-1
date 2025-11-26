@@ -136,12 +136,13 @@ class Seguritatea {
                 error_log("Seguritatea log (no DB): {$evento} - {$detaleak} - user: {$usuarioId} - ip: {$ip} - ua: {$ua}");
                 return;
             }
-            $stmt = $conn->prepare("INSERT INTO seguritatea_loga (usuario_id, evento, detaleak, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)");
+            // Match table columns: event_type, event_scope, usuario_id, ip, detail
+            $stmt = $conn->prepare("INSERT INTO seguritatea_loga (event_type, event_scope, usuario_id, ip, detail) VALUES (?, ?, ?, ?, ?)");
             if (!$stmt) {
                 error_log("Seguritatea log prepare error: " . $conn->error);
                 return;
             }
-            $stmt->bind_param("issss", $usuarioId, $evento, $detaleak, $ip, $ua);
+            $stmt->bind_param("ssiss", $evento, $detaleak, $usuarioId, $ip, $ua);
             $stmt->execute();
             $stmt->close();
         } catch (\Throwable $e) {

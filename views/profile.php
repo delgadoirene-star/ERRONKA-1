@@ -78,18 +78,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $user = Usuario::lortuIdAgatik($conn, $userId) ?: [];
 
+$homeLink      = function_exists('page_link') ? page_link(9,'home')      : '/index.php';
+$dashboardLink = function_exists('page_link') ? page_link(1,'dashboard') : '/views/dashboard.php';
 ?>
 <link rel="stylesheet" href="/style/style.css">
 <div class="page-wrapper" style="max-width:900px;margin:0 auto;padding:20px;">
     <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:12px;">
-        <form method="POST">
-            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
-            <button type="submit" name="hasiera" class="btn">Hasiera</button>
-        </form>
-        <form method="POST">
-            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
-            <button type="submit" name="logoff" class="btn btn-secondary">Saioa amaitu</button>
-        </form>
+        <a href="<?= htmlspecialchars($dashboardLink) ?>" class="btn">Hasiera</a>
+        <a href="/logout.php" class="btn btn-secondary">Saioa amaitu</a>
     </div>
 
     <?php if ($mensaje): ?>

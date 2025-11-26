@@ -7,7 +7,6 @@ class Salmenta {
     private $produktu_id;
     private $kantitatea;
     private $prezioa_unitarioa;
-    private $prezioa_totala;
     private $data_salmenta;
     private $bezeroa_izena;
     private $bezeroa_nif;
@@ -20,7 +19,6 @@ class Salmenta {
         $this->produktu_id = $produktu_id;
         $this->kantitatea = $kantitatea;
         $this->prezioa_unitarioa = $prezioa_unitarioa;
-        $this->prezioa_totala = $kantitatea * $prezioa_unitarioa;
         $this->data_salmenta = date('Y-m-d H:i:s');
         $this->bezeroa_izena = $bezeroa_izena;
         $this->bezeroa_nif = $bezeroa_nif;
@@ -33,7 +31,7 @@ class Salmenta {
     public function getLangileId() { return $this->langile_id; }
     public function getProduktuId() { return $this->produktu_id; }
     public function getKantitatea() { return $this->kantitatea; }
-    public function getPrezioa() { return $this->prezioa_totala; }
+    public function getPrezioa() { return $this->kantitatea * $this->prezioa_unitarioa; }
     public function getPrezioa_unitarioa() { return $this->prezioa_unitarioa; }
     public function getDataSalmenta() { return $this->data_salmenta; }
     public function getBezeroa() { return $this->bezeroa_izena; }
@@ -52,8 +50,8 @@ class Salmenta {
 			return false;
 		}
 		$sql = "INSERT INTO salmenta (langile_id, produktu_id, kantitatea, prezioa_unitarioa, 
-				prezioa_totala, data_salmenta, bezeroa_izena, bezeroa_nif, bezeroa_telefonoa, oharra) 
-				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+				data_salmenta, bezeroa_izena, bezeroa_nif, bezeroa_telefonoa, oharra) 
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 		
 		$stmt = $conn->prepare($sql);
 		if (!$stmt) {
@@ -63,12 +61,11 @@ class Salmenta {
         
         // TIPOS CORRECTOS: 3 ints, 2 doubles, 5 strings = "iiiddsssss"
         $stmt->bind_param(
-            "iiiddsssss",
+            "iiidsssss",
             $this->langile_id,
             $this->produktu_id,
             $this->kantitatea,
             $this->prezioa_unitarioa,
-            $this->prezioa_totala,
             $this->data_salmenta,
             $this->bezeroa_izena,
             $this->bezeroa_nif,
@@ -156,11 +153,11 @@ class Salmenta {
     public static function kalkulaSalmentaGuztira($conn, $langile_id = null) {
 		if (!$conn) return 0;
         if ($langile_id) {
-            $sql = "SELECT SUM(prezioa_totala) as guztira FROM salmenta WHERE langile_id = ?";
+            $sql = "SELECT SUM(prezioa_unitarioa * kantitatea) as guztira FROM salmenta WHERE langile_id = ?";
             $stmt = $conn->prepare($sql);
             $stmt->bind_param("i", $langile_id);
         } else {
-            $sql = "SELECT SUM(prezioa_totala) as guztira FROM salmenta";
+            $sql = "SELECT SUM(prezioa_unitarioa * kantitatea) as guztira FROM salmenta";
             $stmt = $conn->prepare($sql);
         }
         
@@ -175,11 +172,11 @@ class Salmenta {
     // Eguneratzea
     public function eguneratu($conn) {
 		if (!$conn) return false;
-        $sql = "UPDATE salmenta SET kantitatea=?, prezioa_unitarioa=?, prezioa_totala=?, 
+        $sql = "UPDATE salmenta SET kantitatea=?, prezioa_unitarioa=?, 
                 bezeroa_izena=?, bezeroa_nif=?, bezeroa_telefonoa=?, oharra=? WHERE id=?";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("iidssssi", $this->kantitatea, $this->prezioa_unitarioa, 
-                          $this->prezioa_totala, $this->bezeroa_izena, $this->bezeroa_nif, 
+        $stmt->bind_param("idssssi", $this->kantitatea, $this->prezioa_unitarioa, 
+                          $this->bezeroa_izena, $this->bezeroa_nif, 
                           $this->bezeroa_telefonoa, $this->oharra, $this->id);
         $emaitza = $stmt->execute();
         $stmt->close();
@@ -202,8 +199,8 @@ class Salmenta {
 		if (!$conn) return null;
         $sql = "SELECT 
                 COUNT(*) as salmenta_totala,
-                SUM(prezioa_totala) as diru_totala,
-                AVG(prezioa_totala) as batez_bestekoa,
+                SUM(prezioa_unitarioa * kantitatea) as diru_totala,
+                AVG(prezioa_unitarioa * kantitatea) as batez_bestekoa,
                 DATE(MAX(data_salmenta)) as azkena_salmenta
                 FROM salmenta";
         
@@ -224,13 +221,31 @@ class Salmenta {
         $st->execute(); $r=$st->get_result()->fetch_assoc(); $st->close(); return $r?:null;
     }
     public static function create(mysqli $conn,array $d):bool {
-        $st=$conn->prepare("INSERT INTO salmenta (langile_id, produktu_id, kantitatea, prezioa_unitarioa, prezioa_totala, data_salmenta, bezeroa_izena, bezeroa_nif, bezeroa_telefonoa, oharra) VALUES (?,?,?,?,?,?,?,?,?,?)");
-        $st->bind_param("iiiddsssss",$d['langile_id'],$d['produktu_id'],$d['kantitatea'],$d['prezioa_unitarioa'],$d['prezioa_totala'],$d['data_salmenta'],$d['bezeroa_izena'],$d['bezeroa_nif'],$d['bezeroa_telefonoa'],$d['oharra']);
+        $st=$conn->prepare("INSERT INTO salmenta (langile_id, produktu_id, kantitatea, prezioa_unitarioa, data_salmenta, bezeroa_izena, bezeroa_nif, bezeroa_telefonoa, oharra) VALUES (?,?,?,?,?,?,?,?,?)");
+        $st->bind_param("iiidsssss",
+            $d['langile_id'],
+            $d['produktu_id'],
+            $d['kantitatea'],
+            $d['prezioa_unitarioa'],
+            $d['data_salmenta'],
+            $d['bezeroa_izena'],
+            $d['bezeroa_nif'],
+            $d['bezeroa_telefonoa'],
+            $d['oharra']
+        );
         $ok=$st->execute(); $st->close(); return $ok;
     }
     public static function update(mysqli $conn,int $id,array $d):bool {
-        $st=$conn->prepare("UPDATE salmenta SET kantitatea=?, prezioa_unitarioa=?, prezioa_totala=?, bezeroa_izena=?, bezeroa_nif=?, bezeroa_telefonoa=?, oharra=? WHERE id=?");
-        $st->bind_param("id dssssi",$d['kantitatea'],$d['prezioa_unitarioa'],$d['prezioa_totala'],$d['bezeroa_izena'],$d['bezeroa_nif'],$d['bezeroa_telefonoa'],$d['oharra'],$id);
+        $st=$conn->prepare("UPDATE salmenta SET kantitatea=?, prezioa_unitarioa=?, bezeroa_izena=?, bezeroa_nif=?, bezeroa_telefonoa=?, oharra=? WHERE id=?");
+        $st->bind_param("idssssi",
+            $d['kantitatea'],
+            $d['prezioa_unitarioa'],
+            $d['bezeroa_izena'],
+            $d['bezeroa_nif'],
+            $d['bezeroa_telefonoa'],
+            $d['oharra'],
+            $id
+        );
         $ok=$st->execute(); $st->close(); return $ok;
     }
     public static function delete(mysqli $conn,int $id):bool {

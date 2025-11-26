@@ -58,6 +58,7 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
 
 $langileak = Langilea::all($conn);
 $usuarios = $conn->query("SELECT id, user FROM usuario ORDER BY id DESC")->fetch_all(MYSQLI_ASSOC);
+$dashboardLink = function_exists('page_link') ? page_link(1, 'dashboard') : '/views/dashboard.php';
 ?>
 <link rel="stylesheet" href="/style/style.css">
 <div class="page-wrapper" style="max-width:1100px;margin:0 auto;padding:20px;">
@@ -130,4 +131,7 @@ $usuarios = $conn->query("SELECT id, user FROM usuario ORDER BY id DESC")->fetch
         <?php endforeach;?>
         </tbody>
     </table>
+    <div style="margin-top:12px;">
+        <a href="<?= htmlspecialchars($dashboardLink) ?>" class="btn btn-secondary">← Dashboard</a>
+    </div>
 </div>

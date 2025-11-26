@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
         $errorea='CSRF errorea.';
     } else {
         $action = $_POST['action'] ?? '';
-        if ($action==='delete') {
+        if ($action==='delete_langilea') {
             $id=(int)($_POST['id']??0);
             if ($id && Langilea::delete($conn,$id)) $mezua='Ezabatua.';
             else $errorea='Ezabaketak huts egin du.';
@@ -27,6 +27,7 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
 }
 
 $langileak = Langilea::all($conn);
+$dashboardLink = function_exists('page_link') ? page_link(1, 'dashboard') : '/views/dashboard.php';
 ?>
 <!DOCTYPE html>
 <html lang="eu">
@@ -34,7 +35,7 @@ $langileak = Langilea::all($conn);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Langileak - Zabala</title>
-    <link rel="stylesheet" href="../style/style.css">
+    <link rel="stylesheet" href="/style/style.css">
 </head>
 <body>
     <main class="container">
@@ -51,8 +52,8 @@ $langileak = Langilea::all($conn);
 
         <div id="form-sortu" class="form-container" style="display:none; margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
             <h3>Langilea Sortu</h3>
-            <form method="POST" action="../controllers/AdminController.php?action=add">
-                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
+            <form method="POST" action="../controllers/AdminController.php?action=add_langilea">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
                 <div class="form-row">
                     <div class="form-group"><label>Izena*</label><input type="text" name="izena" required></div>
                     <div class="form-group"><label>Abizena*</label><input type="text" name="abizena" required></div>
@@ -95,9 +96,9 @@ $langileak = Langilea::all($conn);
                             <td><?php echo htmlspecialchars($langilea['departamendua'] ?? ''); ?></td>
                             <td><?php echo htmlspecialchars($langilea['pozisio'] ?? ''); ?></td>
                             <td>
-                                <form method="POST" action="../controllers/AdminController.php?action=delete" style="display:inline;">
-                                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
-                                    <input type="hidden" name="id" value="<?php echo (int)$langilea['id']; ?>">
+                                <form method="POST" action="../controllers/AdminController.php?action=delete_langilea" style="display:inline;">
+                                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
+                                    <input type="hidden" name="id" value="<?= (int)$langilea['id'] ?>">
                                     <button class="btn btn-danger btn-sm" onclick="return confirm('Seguru zaude?');">Ezabatu</button>
                                 </form>
                             </td>
@@ -105,6 +106,10 @@ $langileak = Langilea::all($conn);
                     <?php endforeach; ?>
                 </tbody>
             </table>
+        </div>
+
+        <div style="margin-top:16px;">
+            <a href="<?= htmlspecialchars($dashboardLink) ?>" class="btn btn-secondary">← Dashboard</a>
         </div>
     </main>
     <script>

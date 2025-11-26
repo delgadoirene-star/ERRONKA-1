@@ -34,6 +34,8 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
 }
 
 $produktua = $conn->query("SELECT id, izena FROM produktua ORDER BY izena ASC")->fetch_all(MYSQLI_ASSOC);
+$salmentakLink = function_exists('page_link') ? page_link(4, 'salmentak') : '/views/salmentak.php';
+$dashboardLink = function_exists('page_link') ? page_link(1, 'dashboard') : '/views/dashboard.php';
 ?>
 <link rel="stylesheet" href="/style/style.css">
 <div class="page-wrapper" style="max-width:700px;margin:0 auto;padding:20px;">
@@ -67,4 +69,8 @@ $produktua = $conn->query("SELECT id, izena FROM produktua ORDER BY izena ASC")-
         <textarea name="oharra" style="width:100%;margin-bottom:14px;"></textarea>
         <button class="btn" style="width:100%;">Gorde</button>
     </form>
+    <div style="display:flex;gap:8px;margin-top:12px;">
+        <a href="<?= htmlspecialchars($salmentakLink) ?>" class="btn btn-secondary">← Salmentak</a>
+        <a href="<?= htmlspecialchars($dashboardLink) ?>" class="btn btn-secondary">Dashboard</a>
+    </div>
 </div>

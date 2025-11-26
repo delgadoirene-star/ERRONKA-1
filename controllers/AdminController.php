@@ -52,6 +52,40 @@ try {
             back_with('ok','Langilea eguneratu da');
             break;
 
+        case 'add_langilea':
+            // create usuario + langilea minimal flow
+            $izena   = trim($_POST['izena'] ?? '');
+            $abizena = trim($_POST['abizena'] ?? '');
+            $nan     = trim($_POST['nan'] ?? '');
+            $email   = trim($_POST['email'] ?? '');
+            $tel     = trim($_POST['telefonoa'] ?? '');
+            $dep     = trim($_POST['departamendua'] ?? '');
+            $poz     = trim($_POST['pozisio'] ?? '');
+            $pass    = $_POST['pasahitza'] ?? '';
+
+            if ($izena==='' || $abizena==='' || $nan==='' || $email==='' || $pass==='') {
+                back_with('error','Eremu derrigorrezkoak');
+                break;
+            }
+            // Create usuario
+            $userName = strtolower(preg_replace('/\s+/', '.', $izena)) . '.' . strtolower(preg_replace('/\s+/', '.', $abizena));
+            $hash = password_hash($pass, PASSWORD_DEFAULT);
+            $st = $conn->prepare("INSERT INTO usuario (izena, abizena, nan, email, user, password, rol, aktibo) VALUES (?,?,?,?,?,?,?,1)");
+            $rol = 'langilea';
+            $st->bind_param("sssssss",$izena,$abizena,$nan,$email,$userName,$hash,$rol);
+            $st->execute();
+            $uid = $conn->insert_id;
+            $st->close();
+
+            // Create langilea
+            $st2 = $conn->prepare("INSERT INTO langilea (usuario_id, departamendua, pozisio, telefonoa) VALUES (?,?,?,?)");
+            $st2->bind_param("isss",$uid,$dep,$poz,$tel);
+            $st2->execute();
+            $st2->close();
+
+            back_with('ok','Langilea sortu da');
+            break;
+
         case 'delete_produktua':
             $id = (int)($_POST['id'] ?? 0);
             $stmt = $conn->prepare("DELETE FROM produktua WHERE id=?");

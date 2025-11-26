@@ -47,12 +47,12 @@ class Produktua {
     }
     public static function create(mysqli $conn, array $d): bool {
         $st = $conn->prepare("INSERT INTO produktua (izena, deskripzioa, kategoria, prezioa, stock, stock_minimo) VALUES (?,?,?,?,?,?)");
-        $st->bind_param("sssiii",$d['izena'],$d['deskripzioa'],$d['kategoria'],$d['prezioa'],$d['stock'],$d['stock_minimo']);
+        $st->bind_param("sssdii",$d['izena'],$d['deskripzioa'],$d['kategoria'],$d['prezioa'],$d['stock'],$d['stock_minimo']);
         $ok = $st->execute(); $st->close(); return $ok;
     }
     public static function update(mysqli $conn, int $id, array $d): bool {
         $st = $conn->prepare("UPDATE produktua SET izena=?, deskripzioa=?, kategoria=?, prezioa=?, stock=?, stock_minimo=? WHERE id=?");
-        $st->bind_param("sssiiii",$d['izena'],$d['deskripzioa'],$d['kategoria'],$d['prezioa'],$d['stock'],$d['stock_minimo'],$id);
+        $st->bind_param("sssdiii",$d['izena'],$d['deskripzioa'],$d['kategoria'],$d['prezioa'],$d['stock'],$d['stock_minimo'],$id);
         $ok = $st->execute(); $st->close(); return $ok;
     }
     public static function delete(mysqli $conn, int $id): bool {

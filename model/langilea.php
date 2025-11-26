@@ -52,12 +52,34 @@ class Langilea {
     }
     public static function update(mysqli $conn,int $id,array $d):bool {
         $st=$conn->prepare("UPDATE langilea SET departamendua=?, pozisio=?, data_kontratazio=?, soldata=?, telefonoa=?, foto=? WHERE id=?");
-        $st->bind_param("sssiss i",$d['departamendua'],$d['pozisio'],$d['data_kontratazio'],$d['soldata'],$d['telefonoa'],$d['foto'],$id);
+        $st->bind_param("sssissi",
+            $d['departamendua'],
+            $d['pozisio'],
+            $d['data_kontratazio'],
+            $d['soldata'],
+            $d['telefonoa'],
+            $d['foto'],
+            $id
+        );
         $ok=$st->execute(); $st->close(); return $ok;
     }
     public static function delete(mysqli $conn,int $id):bool {
         $st=$conn->prepare("DELETE FROM langilea WHERE id=?"); $st->bind_param("i",$id);
         $ok=$st->execute(); $st->close(); return $ok;
+    }
+
+    public function sortu($conn) {
+        $stmt = $conn->prepare("INSERT INTO langilea (usuario_id, departamendua, pozisio) VALUES (?, ?, ?)");
+        $stmt->bind_param("iss", $this->usuario_id, $this->departamendua, $this->pozisio);
+        
+        if ($stmt->execute()) {
+            $this->id = $conn->insert_id;
+            $stmt->close();
+            return true;
+        }
+        
+        $stmt->close();
+        return false;
     }
 }
 ?>

@@ -23,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
                 'izena'=>trim($_POST['izena']??''),
                 'deskripzioa'=>trim($_POST['deskripzioa']??''),
                 'kategoria'=>trim($_POST['kategoria']??''),
-                'prezioa'=>(int)($_POST['prezioa']??0),
+                'prezioa'=>(float)($_POST['prezioa']??0),     // changed to float
                 'stock'=>(int)($_POST['stock']??0),
                 'stock_minimo'=>(int)($_POST['stock_minimo']??0),
             ];
@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
                 'izena'=>trim($_POST['izena']??''),
                 'deskripzioa'=>trim($_POST['deskripzioa']??''),
                 'kategoria'=>trim($_POST['kategoria']??''),
-                'prezioa'=>(int)($_POST['prezioa']??0),
+                'prezioa'=>(float)($_POST['prezioa']??0),     // changed to float
                 'stock'=>(int)($_POST['stock']??0),
                 'stock_minimo'=>(int)($_POST['stock_minimo']??0),
             ];
@@ -51,6 +51,7 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
 }
 
 $produktuak = Produktua::all($conn);
+$dashboardLink = function_exists('page_link') ? page_link(1, 'dashboard') : '/views/dashboard.php';
 ?>
 <link rel="stylesheet" href="/style/style.css">
 <div class="page-wrapper" style="max-width:1000px;margin:0 auto;padding:20px;">
@@ -108,4 +109,8 @@ $produktuak = Produktua::all($conn);
         <?php endforeach;?>
         </tbody>
     </table>
+
+    <div style="margin-top:12px;">
+        <a href="<?= htmlspecialchars($dashboardLink) ?>" class="btn btn-secondary">← Dashboard</a>
+    </div>
 </div>
