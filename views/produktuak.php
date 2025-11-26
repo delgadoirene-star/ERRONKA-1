@@ -11,8 +11,8 @@ global $hashids;  // Access global Hashids
 
 // Do not call session_start(); bootstrap already started the session
 if (empty($_SESSION['usuario_id'])) {
-    header("Location: ../index.php");
-    exit;
+    $home = function_exists('page_link') ? page_link(9, 'home') : '/index.php';
+    redirect_to($home);
 }
 
 $usuario_datos = Usuario::lortuIdAgatik($conn, $_SESSION['usuario_id']);
@@ -52,7 +52,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
     } else {
         $id = intval($_POST['id'] ?? 0);
         $izena = trim($_POST['izena'] ?? '');
-        $prezioa = floatval($_POST['prezioa'] ?? 0);
+        $prezioa = floatval($_POST['prezioa' ?? 0]);
         $stock = intval($_POST['stock'] ?? 0);
 
         if ($id > 0 && $izena && $prezioa > 0) {
@@ -95,13 +95,16 @@ if (empty($_SESSION['csrf_token'])) {
 }
 $csrf_token = $_SESSION['csrf_token'];
 
-// Generate encoded page names
-$dashboardEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $hashids->encode(1) : 'dashboard';
-$langileakEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $hashids->encode(2) : 'langileak';
-$produktuakEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $hashids->encode(3) : 'produktuak';
-$salmentakEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $hashids->encode(4) : 'salmentak';
-$nireSalmentakEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $hashids->encode(5) : 'nire_salmentak';
-
+// Replace encoded page generation with helper links
+$dashboardLink    = function_exists('page_link') ? page_link(1, 'dashboard') : '/dashboard.php';
+$langileakLink    = function_exists('page_link') ? page_link(2, 'langileak') : '/langileak.php';
+$produktuakLink   = function_exists('page_link') ? page_link(3, 'produktuak') : '/produktuak.php';
+$salmentakLink    = function_exists('page_link') ? page_link(4, 'salmentak') : '/salmentak.php';
+$nireSalmentakLink= function_exists('page_link') ? page_link(5, 'nire_salmentak') : '/nire_salmentak.php';
+$profileLink      = function_exists('page_link') ? page_link(6, 'profile') : '/profile.php';
+$usuario_datos = Usuario::lortuIdAgatik($conn, $_SESSION['usuario_id']);
+$active = 'produktuak';
+include __DIR__ . '/partials/navbar.php';
 ?>
 <!DOCTYPE html>
 <html lang="eu">
@@ -112,23 +115,6 @@ $nireSalmentakEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')
     <link rel="stylesheet" href="../style/style.css">
 </head>
 <body>
-    <div class="navbar">
-        <div class="navbar-brand">
-            <h2>🏭 <?php echo EMPRESA_IZENA; ?></h2>
-        </div>
-        <div class="navbar-menu">
-            <a href="/<?php echo $dashboardEncoded; ?>.php" class="nav-link">📊 Dashboard</a>
-            <a href="/<?php echo $langileakEncoded; ?>.php" class="nav-link">👥 Langileak</a>
-            <a href="/<?php echo $produktuakEncoded; ?>.php" class="nav-link active">📦 Produktuak</a>
-            <a href="/<?php echo $salmentakEncoded; ?>.php" class="nav-link">💰 Salmentak</a>
-            <a href="/<?php echo $nireSalmentakEncoded; ?>.php" class="nav-link">📋 Nire salmentak</a>
-            <span class="navbar-user">
-                <?php echo htmlspecialchars($usuario_datos['izena'] . " " . $usuario_datos['abizena']); ?>
-            </span>
-            <a href="../logout.php" class="nav-link logout">🚪 Itxi saioa</a>
-        </div>
-    </div>
-
     <div class="container">
         <h1>📦 Produktuak kudeaketa</h1>
 
@@ -204,8 +190,8 @@ $nireSalmentakEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')
                                         <button type="submit" class="btn btn-danger btn-small" onclick="return confirm('Ziur zaude?')">Ezabatu</button>
                                     </form>
                                     <?php
-                                    $encodedId = ($hashids !== null) ? $hashids->encode($produktua['id']) : $produktua['id'];
-                                    echo '<a href="produktu_edit.php?ref=' . htmlspecialchars($encodedId) . '">Editatu</a>';
+                                    $encodedId = function_exists('encode_id') ? encode_id((int)$produktua['id']) : (int)$produktua['id'];
+                                    echo '<a href="' . htmlspecialchars($produktuakLink) . '?ref=' . htmlspecialchars($encodedId) . '">Editatu</a>';
                                     ?>
                                 </td>
                             </tr>

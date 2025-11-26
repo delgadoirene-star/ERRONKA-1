@@ -11,9 +11,8 @@ global $hashids;  // Access global Hashids
 
 // Redirect if logged in
 if (isset($_SESSION['usuario_id'])) {
-    $target = ($hashids !== null) ? ('/' . $hashids->encode(1) . '.php') : '/';
-    header("Location: $target");
-    exit;
+    $target = function_exists('page_link') ? page_link(1, 'dashboard') : '/';
+    redirect_to($target);
 }
 
 // Variables for view
@@ -55,9 +54,8 @@ try {
 
                     Seguritatea::logSeguritatea($conn, "LOGIN_EXITOSO", $email, $resultado['id']);
 
-                    $target = ($hashids !== null) ? ('/' . $hashids->encode(1) . '.php') : '/';
-                    header("Location: $target");
-                    exit;
+                    $target = function_exists('page_link') ? page_link(1, 'dashboard') : '/';
+                    redirect_to($target);
                 } else {
                     error_log("Login failed for $email: invalid credentials");
                     $errorea = "Email edo pasahitza okerra.";

@@ -52,12 +52,15 @@ class Usuario {
     }
 
     // Email edo NANa bidez bilatzea
-    public static function lortuEmailEdoNANegatik($conn, $email, $nan) {
+    public static function lortuEmailEdoNANegatik($conn, $email, $nan): ?array {
         $stmt = $conn->prepare("SELECT * FROM usuario WHERE email = ? OR nan = ?");
+        if (!$stmt) return null;
         $stmt->bind_param("ss", $email, $nan);
         $stmt->execute();
         $result = $stmt->get_result();
-        return $result->fetch_assoc();
+        $row = $result->fetch_assoc() ?: null;
+        $stmt->close(); // ensure closure
+        return $row;
     }
     
     // ID bidez bilatzea

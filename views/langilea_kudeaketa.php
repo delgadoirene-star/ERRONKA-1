@@ -7,14 +7,22 @@ require_once __DIR__ . '/../model/usuario.php';
 
 global $hashids;
 
+// Ensure admin
 if (($_SESSION['usuario_rol'] ?? '') !== 'admin') {
-    header('Location: ../index.php'); exit;
+    $home = function_exists('page_link') ? page_link(9, 'home') : '/index.php';
+    redirect_to($home);
 }
 
+// CSRF token
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = Seguritatea::generateCSRFToken();
 }
 $csrf_token = $_SESSION['csrf_token'];
+
+// Load usuario info for navbar/profile display
+$usuario_datos = Usuario::lortuIdAgatik($conn, $_SESSION['usuario_id'] ?? null);
+$active = 'langileak';
+include __DIR__ . '/partials/navbar.php';
 
 $langileak = Langilea::lortuGuztiak($conn);
 ?>
@@ -27,25 +35,6 @@ $langileak = Langilea::lortuGuztiak($conn);
     <link rel="stylesheet" href="../style/style.css">
 </head>
 <body>
-    <nav class="navbar">
-        <div class="container">
-            <div class="navbar-brand">
-                <h1>🏢 Zabala</h1>
-            </div>
-            <div class="navbar-menu">
-                <?php
-                // Generate encoded page names
-                $dashboardEncoded = ($hashids !== null) ? $hashids->encode(1) : 'dashboard';
-                ?>
-                <a href="/<?php echo $dashboardEncoded; ?>.php" class="nav-link">Dashboard</a>
-                <a href="../controllers/AdminController.php?accion=langileak" class="nav-link active">Langileak</a>
-                <a href="../controllers/AdminController.php?accion=produktuak" class="nav-link">Produktuak</a>
-                <a href="../controllers/AdminController.php?accion=salmentak" class="nav-link">Salmentak</a>
-                <a href="../logout.php" class="nav-link">Saioa itxi</a>
-            </div>
-        </div>
-    </nav>
-
     <main class="container">
         <h2>👥 Langileak Kudeaketa</h2>
         

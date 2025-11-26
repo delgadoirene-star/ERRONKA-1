@@ -11,8 +11,8 @@ global $hashids;  // Access global Hashids
 
 // Remove session_start(); already started
 if (!isset($_SESSION['usuario_id'])) {
-    header("Location: ../index.php");
-    exit;
+    $home = function_exists('page_link') ? page_link(9, 'home') : '/index.php';
+    redirect_to($home);
 }
 
 // Do not regenerate CSRF on POST; only on first render
@@ -128,14 +128,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
     $salmentak = Salmenta::lortuGuztiak($conn);
 }
 
-// Generate encoded page names
-$dashboardEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $hashids->encode(1) : 'dashboard';
-$langileakEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $hashids->encode(2) : 'langileak';
-$produktuakEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $hashids->encode(3) : 'produktuak';
-$salmentakEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $hashids->encode(4) : 'salmentak';
-$nireSalmentakEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $hashids->encode(5) : 'nire_salmentak';
+// Generate router-safe links via helpers from bootstrap
+$dashboardLink    = function_exists('page_link') ? page_link(1, 'dashboard') : '/dashboard.php';
+$langileakLink    = function_exists('page_link') ? page_link(2, 'langileak') : '/langileak.php';
+$produktuakLink   = function_exists('page_link') ? page_link(3, 'produktuak') : '/produktuak.php';
+$salmentakLink    = function_exists('page_link') ? page_link(4, 'salmentak') : '/salmentak.php';
+$nireSalmentakLink= function_exists('page_link') ? page_link(5, 'nire_salmentak') : '/nire_salmentak.php';
 $usuario_datos = Usuario::lortuIdAgatik($conn, $_SESSION['usuario_id']);
-$profileEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $hashids->encode(6) : 'profile';
+$active = 'salmentak';
+include __DIR__ . '/partials/navbar.php';
 
 ?>
 <!DOCTYPE html>
@@ -147,21 +148,6 @@ $profileEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $h
     <link rel="stylesheet" href="../style/style.css">
 </head>
 <body>
-    <div class="navbar">
-        <div class="navbar-brand">
-            <h2>🏭 <?php echo EMPRESA_IZENA; ?></h2>
-        </div>
-        <div class="navbar-menu">
-            <a href="/<?php echo $dashboardEncoded; ?>.php" class="nav-link">📊 Dashboard</a>
-            <a href="/<?php echo $langileakEncoded; ?>.php" class="nav-link">👥 Langileak</a>
-            <a href="/<?php echo $produktuakEncoded; ?>.php" class="nav-link">📦 Produktuak</a>
-            <a href="/<?php echo $salmentakEncoded; ?>.php" class="nav-link active">💰 Salmentak</a>
-            <a href="/<?php echo $nireSalmentakEncoded; ?>.php" class="nav-link">📋 Nire salmentak</a>
-            <a href="/<?php echo $profileEncoded; ?>.php" class="nav-link">👤 <?php echo htmlspecialchars(($usuario_datos['izena'] ?? '') . ' ' . ($usuario_datos['abizena'] ?? '')); ?></a>
-            <a href="../logout.php" class="nav-link logout">🚪 Itxi saioa</a>
-        </div>
-    </div>
-
     <div class="container">
         <h1>💰 Salmentak kudeaketa</h1>
 
@@ -286,7 +272,7 @@ $profileEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $h
                                 <td><?php echo $salmenta['data_salmenta']; ?></td>
                                 <td>
                                     <?php
-                                    $encodedId = ($hashids !== null) ? $hashids->encode($salmenta['id']) : $salmenta['id'];
+                                    $encodedId = function_exists('encode_id') ? encode_id((int)$salmenta['id']) : (int)$salmenta['id'];
                                     echo '<a href="salmenta_detalle.php?ref=' . htmlspecialchars($encodedId) . '">Ikusi</a>';
                                     ?>
                                 </td>

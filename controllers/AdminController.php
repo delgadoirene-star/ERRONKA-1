@@ -8,8 +8,16 @@ require_once __DIR__ . '/../model/usuario.php';
 $action = $_GET['action'] ?? $_GET['accion'] ?? $_POST['action'] ?? '';
 
 function back_with($type, $msg) {
+    // Use page_link() helper (defined in bootstrap) to build a router-safe target
     $_SESSION["flash_$type"] = $msg;
-    header('Location: ../views/langileak.php'); exit;
+    $target = function_exists('page_link') ? page_link(2, 'langileak') : '/langileak.php';
+    // Prefer redirect helper (falls back to JS header if headers already sent)
+    if (function_exists('redirect_to')) {
+        redirect_to($target);
+    } else {
+        header('Location: ' . $target);
+        exit;
+    }
 }
 
 try {
@@ -81,7 +89,14 @@ try {
         }
     }
 
-    header('Location: ../views/langileak.php'); exit;
+    // Default: redirect to langileak page via router helper
+    $default = function_exists('page_link') ? page_link(2, 'langileak') : '/langileak.php';
+    if (function_exists('redirect_to')) {
+        redirect_to($default);
+    } else {
+        header('Location: ' . $default);
+        exit;
+    }
 } catch (Throwable $e) {
     error_log("AdminController error: " . $e->getMessage());
     back_with('error', 'Barneko errorea.');

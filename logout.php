@@ -11,6 +11,7 @@ if (isset($_SESSION['usuario_id'])) {
 
 session_unset();
 session_destroy();
-header("Location: index.php");
-exit;
+// Redirect to home via helper if available
+$home = function_exists('page_link') ? page_link(9, 'home') : '/index.php';
+redirect_to($home);
 ?>

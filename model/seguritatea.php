@@ -140,8 +140,13 @@ class Seguritatea {
     public static function egiaztaSesioa(): void {
         self::hasieratuSesioa();
         if (empty($_SESSION['usuario_id'])) {
-            header('Location: /signin.php');
-            exit;
+            // Use redirect helper if defined (bootstrap defines it after requiring this file).
+            if (function_exists('redirect_to')) {
+                redirect_to('/signin.php');
+            } else {
+                header('Location: /signin.php');
+                exit;
+            }
         }
     }
 

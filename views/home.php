@@ -1,4 +1,6 @@
 <?php
+// Ensure bootstrap is loaded so session/CSRF helper is available
+require_once __DIR__ . '/../bootstrap.php';
 $baseUrl = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 if ($baseUrl === '/' || $baseUrl === '\\') { $baseUrl = ''; }
 

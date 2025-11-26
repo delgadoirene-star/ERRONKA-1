@@ -85,12 +85,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 }
 
-// Generate encoded page names
-$dashboardEncoded = ($hashids !== null) ? $hashids->encode(1) : 'dashboard';
-$salmentaBerriaEncoded = ($hashids !== null) ? $hashids->encode(7) : 'salmenta_berria';
-$nireSalmentakEncoded = ($hashids !== null) ? $hashids->encode(5) : 'nire_salmentak';
-$profileEncoded = ($hashids !== null) ? $hashids->encode(6) : 'profile';
+// Generate encoded page names via helper
+$dashboardLink      = function_exists('page_link') ? page_link(1, 'dashboard') : '/dashboard.php';
+$salmentaBerriaLink = function_exists('page_link') ? page_link(7, 'salmenta_berria') : '/salmenta_berria.php';
+$nireSalmentakLink  = function_exists('page_link') ? page_link(5, 'nire_salmentak') : '/nire_salmentak.php';
+$profileLink        = function_exists('page_link') ? page_link(6, 'profile') : '/profile.php';
 $usuario_datos = Usuario::lortuIdAgatik($conn, $_SESSION['usuario_id']);
+$active = 'salmenta_berria';
+include __DIR__ . '/partials/navbar.php';
 ?>
 <!DOCTYPE html>
 <html lang="eu">
@@ -101,21 +103,6 @@ $usuario_datos = Usuario::lortuIdAgatik($conn, $_SESSION['usuario_id']);
     <link rel="stylesheet" href="../style/style.css">
 </head>
 <body>
-    <nav class="navbar">
-        <div class="navbar-container">
-            <div class="navbar-brand">
-                <h2>🏭 Xabala</h2>
-            </div>
-            <ul class="navbar-menu">
-                <li><a href="/<?php echo $dashboardEncoded; ?>.php">Dashboard</a></li>
-                <li><a href="/<?php echo $salmentaBerriaEncoded; ?>.php" class="active">Salmenta Berria</a></li>
-                <li><a href="/<?php echo $nireSalmentakEncoded; ?>.php">Nire Salmentak</a></li>
-                <li><a href="/<?php echo $profileEncoded; ?>.php">👤 <?php echo htmlspecialchars(($usuario_datos['izena'] ?? '') . ' ' . ($usuario_datos['abizena'] ?? '')); ?></a></li>
-                <li><a href="../logout.php">Atera</a></li>
-            </ul>
-        </div>
-    </nav>
-
     <div class="container">
         <div class="page-header">
             <h1>Salmenta Berria</h1>

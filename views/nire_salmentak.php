@@ -11,17 +11,14 @@ global $hashids;  // Access global Hashids
 
 // Autentifikazioa egiaztatzea
 if (!isset($_SESSION['usuario_id'])) {
-    header("Location: ../index.php");
-    exit;
+    $home = function_exists('page_link') ? page_link(9, 'home') : '/index.php';
+    redirect_to($home);
 }
 
 // Erabiltzailearen datuak lortzea
 $usuario_datos = Usuario::lortuIdAgatik($conn, $_SESSION['usuario_id']);
-if (!$usuario_datos) {
-    session_destroy();
-    header("Location: ../index.php");
-    exit;
-}
+$active = 'nire_salmentak';
+include __DIR__ . '/partials/navbar.php';
 
 // Langilearen ID lortu
 $langile_info = null;
@@ -47,13 +44,13 @@ foreach ($salmentak as $salmenta) {
     $salmenta_guztira += $salmenta['prezioa_totala'];
 }
 
-// Generate encoded page names
-$dashboardEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $hashids->encode(1) : 'dashboard';
-$langileakEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $hashids->encode(2) : 'langileak';
-$produktuakEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $hashids->encode(3) : 'produktuak';
-$salmentakEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $hashids->encode(4) : 'salmentak';
-$nireSalmentakEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $hashids->encode(5) : 'nire_salmentak';
-$profileEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $hashids->encode(6) : 'profile';
+// Generate router-safe links
+$dashboardLink    = function_exists('page_link') ? page_link(1, 'dashboard') : '/dashboard.php';
+$langileakLink    = function_exists('page_link') ? page_link(2, 'langileak') : '/langileak.php';
+$produktuakLink   = function_exists('page_link') ? page_link(3, 'produktuak') : '/produktuak.php';
+$salmentakLink    = function_exists('page_link') ? page_link(4, 'salmentak') : '/salmentak.php';
+$nireSalmentakLink= function_exists('page_link') ? page_link(5, 'nire_salmentak') : '/nire_salmentak.php';
+$profileLink      = function_exists('page_link') ? page_link(6, 'profile') : '/profile.php';
 
 ?>
 <!DOCTYPE html>
@@ -70,11 +67,11 @@ $profileEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $h
             <h2>🏭 <?php echo EMPRESA_IZENA; ?></h2>
         </div>
         <div class="navbar-menu">
-            <a href="/<?php echo $dashboardEncoded; ?>.php" class="nav-link">📊 Dashboard</a>
-            <a href="/<?php echo $langileakEncoded; ?>.php" class="nav-link">👥 Langileak</a>
-            <a href="/<?php echo $produktuakEncoded; ?>.php" class="nav-link">📦 Produktuak</a>
-            <a href="/<?php echo $salmentakEncoded; ?>.php" class="nav-link">💰 Salmentak</a>
-            <a href="/<?php echo $nireSalmentakEncoded; ?>.php" class="nav-link active">📋 Nire salmentak</a>
+            <a href="<?php echo htmlspecialchars($dashboardLink); ?>" class="nav-link">📊 Dashboard</a>
+            <a href="<?php echo htmlspecialchars($langileakLink); ?>" class="nav-link">👥 Langileak</a>
+            <a href="<?php echo htmlspecialchars($produktuakLink); ?>" class="nav-link">📦 Produktuak</a>
+            <a href="<?php echo htmlspecialchars($salmentakLink); ?>" class="nav-link">💰 Salmentak</a>
+            <a href="<?php echo htmlspecialchars($nireSalmentakLink); ?>" class="nav-link active">📋 Nire salmentak</a>
             <span class="navbar-user">
                 <?php echo htmlspecialchars($usuario_datos['izena'] . " " . $usuario_datos['abizena']); ?>
             </span>
@@ -141,8 +138,8 @@ $profileEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $h
         </div>
 
         <div class="action-buttons">
-            <a href="/<?php echo $salmentakEncoded; ?>.php" class="btn btn-secondary">← Atzera salmentetara</a>
-            <a href="/<?php echo $dashboardEncoded; ?>.php" class="btn btn-primary">Dashboarda itzuli</a>
+            <a href="<?php echo htmlspecialchars($salmentakLink); ?>" class="btn btn-secondary">← Atzera salmentetara</a>
+            <a href="<?php echo htmlspecialchars($dashboardLink); ?>" class="btn btn-primary">Dashboarda itzuli</a>
         </div>
     </div>
 

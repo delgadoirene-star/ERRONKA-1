@@ -1,8 +1,9 @@
 <?php
 require_once __DIR__ . '/../bootstrap.php';
+require_once __DIR__ . '/../model/usuario.php';
 
 $userId = $_SESSION['usuario_id'] ?? null;
-if (!$userId) { header('Location: /signin.php'); exit; }
+if (!$userId) { redirect_to('/signin.php'); }
 
 $mensaje = '';
 $errorea = '';
@@ -47,13 +48,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->close();
         }
     } elseif (isset($_POST['logoff'])) {
-        header('Location: ../logout.php'); exit;
+        redirect_to('/logout.php');
     } elseif (isset($_POST['hasiera'])) {
-        header('Location: ../index.php'); exit;
+        $home = function_exists('page_link') ? page_link(9, 'home') : '/';
+        redirect_to($home);
     }
 }
 
 $user = Usuario::lortuIdAgatik($conn, $userId);
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = Seguritatea::generateCSRFToken();
+}
 $aktiboak = $aktiboak ?? [];
 $historia = $historia ?? [];
 ?>

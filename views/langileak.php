@@ -11,8 +11,8 @@ global $hashids;  // Access global Hashids
 // echo "Debug: Hashids loaded: " . ($hashids !== null ? 'Yes' : 'No') . "<br>";
 
 if (empty($_SESSION['usuario_id'])) {
-    header('Location: ../index.php');
-    exit;
+    $home = function_exists('page_link') ? page_link(9, 'home') : '/index.php';
+    redirect_to($home);
 }
 
 // CSRF only once
@@ -26,15 +26,18 @@ $flash_success = $_SESSION['flash_success'] ?? '';
 unset($_SESSION['flash_error'], $_SESSION['flash_success']);
 
 $usuario_datos = Usuario::lortuIdAgatik($conn, $_SESSION['usuario_id']);
+$active = 'langileak';
+include __DIR__ . '/partials/navbar.php';
 
 $langileak = Langilea::lortuGuztiak($conn);
 
-// Generate encoded page names
-$dashboardEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $hashids->encode(1) : 'dashboard';
-$langileakEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $hashids->encode(2) : 'langileak';
-$produktuakEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $hashids->encode(3) : 'produktuak';
-$salmentakEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $hashids->encode(4) : 'salmentak';
-$nireSalmentakEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $hashids->encode(5) : 'nire_salmentak';
+// Use page_link helper for navbar and manage link
+$dashboardLink    = function_exists('page_link') ? page_link(1, 'dashboard') : '/dashboard.php';
+$langileakLink    = function_exists('page_link') ? page_link(2, 'langileak') : '/langileak.php';
+$produktuakLink   = function_exists('page_link') ? page_link(3, 'produktuak') : '/produktuak.php';
+$salmentakLink    = function_exists('page_link') ? page_link(4, 'salmentak') : '/salmentak.php';
+$nireSalmentakLink= function_exists('page_link') ? page_link(5, 'nire_salmentak') : '/nire_salmentak.php';
+$profileLink      = function_exists('page_link') ? page_link(6, 'profile') : '/profile.php';
 ?>
 <!DOCTYPE html>
 <html lang="eu">
@@ -45,23 +48,6 @@ $nireSalmentakEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')
     <link rel="stylesheet" href="../style/style.css">
 </head>
 <body>
-    <div class="navbar">
-        <div class="navbar-brand">
-            <h2>🏭 <?php echo EMPRESA_IZENA; ?></h2>
-        </div>
-        <div class="navbar-menu">
-            <a href="/<?php echo $dashboardEncoded; ?>.php" class="nav-link">📊 Dashboard</a>
-            <a href="/<?php echo $langileakEncoded; ?>.php" class="nav-link active">👥 Langileak</a>
-            <a href="/<?php echo $produktuakEncoded; ?>.php" class="nav-link">📦 Produktuak</a>
-            <a href="/<?php echo $salmentakEncoded; ?>.php" class="nav-link">💰 Salmentak</a>
-            <a href="/<?php echo $nireSalmentakEncoded; ?>.php" class="nav-link">📋 Nire salmentak</a>
-            <span class="navbar-user">
-                <?php echo htmlspecialchars($usuario_datos['izena'] . " " . $usuario_datos['abizena']); ?>
-            </span>
-            <a href="../logout.php" class="nav-link logout">🚪 Itxi saioa</a>
-        </div>
-    </div>
-
     <div class="container">
         <h1>👥 Langileak kudeaketa</h1>
 
@@ -129,11 +115,12 @@ $nireSalmentakEncoded = ($hashids !== null && class_exists('\\Hashids\\Hashids')
                                 <td><?php echo htmlspecialchars($langilea['pozisio'] ?? '-'); ?></td>
                                 <td><?php echo number_format($langilea['soldata'] ?? 0, 2); ?>€</td>
                                 <?php
-                                $editEncoded = ($hashids !== null) ? $hashids->encode($langilea['id']) : $langilea['id'];
+                                $refEnc = function_exists('encode_id') ? encode_id((int)$langilea['id']) : (int)$langilea['id'];
+                                $manageLink = function_exists('page_link') ? page_link(8, 'langilea_kudeaketa') : '/langilea_kudeaketa.php';
                                 ?>
                                 <td>
-                                    <a href="langile_edit.php?ref=<?php echo htmlspecialchars($editEncoded); ?>">Editatu</a>
-                                    <form method="POST" action="../controllers/AdminController.php?action=delete" style="display:inline;">
+                                    <a href="<?php echo htmlspecialchars($manageLink); ?>?ref=<?php echo htmlspecialchars($refEnc); ?>">Editatu</a>
+                                     <form method="POST" action="../controllers/AdminController.php?action=delete" style="display:inline;">
                                         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                                         <input type="hidden" name="id" value="<?php echo (int)$langilea['id']; ?>">
                                         <button class="btn btn-danger btn-sm" onclick="return confirm('Seguru zaude?');">Ezabatu</button>

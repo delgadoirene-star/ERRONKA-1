@@ -9,16 +9,16 @@ global $hashids;  // Access global Hashids
 
 // Autentifikazioa egiaztatzea
 if (!isset($_SESSION['usuario_id'])) {
-    header("Location: ../index.php");
-    exit;
+    $home = function_exists('page_link') ? page_link(9, 'home') : '/index.php';
+    redirect_to($home);
 }
 
 // Erabiltzailearen datuak lortzea
 $usuario_datos = Usuario::lortuIdAgatik($conn, $_SESSION['usuario_id']);
 if (!$usuario_datos) {
     session_destroy();
-    header("Location: ../index.php");
-    exit;
+    $home = function_exists('page_link') ? page_link(9, 'home') : '/index.php';
+    redirect_to($home);
 }
 
 // Langilearen datuak lortzea
@@ -38,15 +38,20 @@ $salmentak_azkena = array_slice($salmentak_azkena, 0, 10);
 
 // When generating a referral link, e.g., for sharing or actions
 $id = 123;  // Replace with actual ID
-$ref = ($hashids !== null && class_exists('\\Hashids\\Hashids')) ? $hashids->encode($id) : $id;  // Encode if available, else use plain ID
+$ref = function_exists('encode_id') ? encode_id($id) : $id;
 $url = "http://localhost/views/zabala?ref=" . urlencode($ref);
 
-$dashboardEncoded = ($hashids !== null) ? $hashids->encode(1) : 'dashboard';
-$langileakEncoded = ($hashids !== null) ? $hashids->encode(2) : 'langileak';
-$produktuakEncoded = ($hashids !== null) ? $hashids->encode(3) : 'produktuak';
-$salmentakEncoded = ($hashids !== null) ? $hashids->encode(4) : 'salmentak';
-$nireSalmentakEncoded = ($hashids !== null) ? $hashids->encode(5) : 'nire_salmentak';
+$dashboardLink    = function_exists('page_link') ? page_link(1, 'dashboard') : '/dashboard.php';
+$langileakLink    = function_exists('page_link') ? page_link(2, 'langileak') : '/langileak.php';
+$produktuakLink   = function_exists('page_link') ? page_link(3, 'produktuak') : '/produktuak.php';
+$salmentakLink    = function_exists('page_link') ? page_link(4, 'salmentak') : '/salmentak.php';
+$nireSalmentakLink= function_exists('page_link') ? page_link(5, 'nire_salmentak') : '/nire_salmentak.php';
+$profileLink      = function_exists('page_link') ? page_link(6, 'profile') : '/profile.php';
 
+// Prepare user data for the navbar partial and mark active
+$usuario_datos = Usuario::lortuIdAgatik($conn, $_SESSION['usuario_id']);
+$active = 'dashboard';
+include __DIR__ . '/partials/navbar.php';
 ?>
 <!DOCTYPE html>
 <html lang="eu">
@@ -57,23 +62,6 @@ $nireSalmentakEncoded = ($hashids !== null) ? $hashids->encode(5) : 'nire_salmen
     <link rel="stylesheet" href="../style/style.css">
 </head>
 <body>
-    <div class="navbar">
-        <div class="navbar-brand">
-            <h2>🏭 <?php echo EMPRESA_IZENA; ?></h2>
-        </div>
-        <div class="navbar-menu">
-            <a href="/<?php echo $dashboardEncoded; ?>.php" class="nav-link active">📊 Dashboard</a>
-            <a href="/<?php echo $langileakEncoded; ?>.php" class="nav-link">👥 Langileak</a>
-            <a href="/<?php echo $produktuakEncoded; ?>.php" class="nav-link">📦 Produktuak</a>
-            <a href="/<?php echo $salmentakEncoded; ?>.php" class="nav-link">💰 Salmentak</a>
-            <a href="/<?php echo $nireSalmentakEncoded; ?>.php" class="nav-link">📋 Nire salmentak</a>
-            <span class="navbar-user">
-                <?php echo htmlspecialchars($usuario_datos['izena'] . " " . $usuario_datos['abizena']); ?>
-            </span>
-            <a href="../logout.php" class="nav-link logout">🚪 Itxi saioa</a>
-        </div>
-    </div>
-
     <div class="container">
         <div class="dashboard-header">
             <h1>Ongi etorri, <?php echo htmlspecialchars($usuario_datos['izena']); ?>!</h1>
@@ -87,7 +75,7 @@ $nireSalmentakEncoded = ($hashids !== null) ? $hashids->encode(5) : 'nire_salmen
                     <h3><?php echo $langile_kopurua; ?></h3>
                     <p>Langileak</p>
                 </div>
-                <a href="langileak.php" class="card-link">Ikusi →</a>
+                <a href="<?php echo htmlspecialchars($langileakLink); ?>" class="card-link">Ikusi →</a>
             </div>
 
             <div class="dashboard-card">
@@ -96,7 +84,7 @@ $nireSalmentakEncoded = ($hashids !== null) ? $hashids->encode(5) : 'nire_salmen
                     <h3><?php echo $produktu_kopurua; ?></h3>
                     <p>Produktuak</p>
                 </div>
-                <a href="produktuak.php" class="card-link">Ikusi →</a>
+                <a href="<?php echo htmlspecialchars($produktuakLink); ?>" class="card-link">Ikusi →</a>
             </div>
 
             <div class="dashboard-card">
@@ -105,7 +93,7 @@ $nireSalmentakEncoded = ($hashids !== null) ? $hashids->encode(5) : 'nire_salmen
                     <h3><?php echo number_format($salmenta_guztira, 2); ?>€</h3>
                     <p>Guztirako salmenta</p>
                 </div>
-                <a href="salmentak.php" class="card-link">Ikusi →</a>
+                <a href="<?php echo htmlspecialchars($salmentakLink); ?>" class="card-link">Ikusi →</a>
             </div>
 
             <div class="dashboard-card">

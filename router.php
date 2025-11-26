@@ -1,17 +1,31 @@
 <?php
 require_once __DIR__ . '/bootstrap.php';
-$hashids = (class_exists('\\Hashids\\Hashids')) ? new \Hashids\Hashids('ZAB_IGAI_PLAT_GEN', 8) : null;
+
+// Use the global $hashids initialized in bootstrap (if available)
+global $hashids;
+// $hashids may be null when library not available; bootstrap handles initialization
 
 $request = $_SERVER['REQUEST_URI'];
 $path = parse_url($request, PHP_URL_PATH) ?: '/';
 $page = basename($path, '.php') ?: 'home';
 
+// If no Hashids library, try direct view file mapping (keep legacy behavior)
 if ($hashids === null) {
-    include 'views/home.php';
+    if ($page === '' || $page === 'router' || $page === 'home') {
+        include 'views/home.php';
+        exit;
+    }
+    $candidate = __DIR__ . "/views/{$page}.php";
+    if (file_exists($candidate)) {
+        include $candidate;
+        exit;
+    }
+    http_response_code(404);
+    include 'views/404.php';
     exit;
 }
 
-if ($page === '' || $page === 'router') {
+if ($page === '' || $page === 'router' || $page === 'home') {
     include 'views/home.php';
     exit;
 }
@@ -34,6 +48,13 @@ if ($decoded && isset($decoded[0])) {
     include "views/{$realPage}.php";
     exit;
 } else {
+    // Fallback: maybe the incoming basename was a literal view name (e.g. profile)
+    $candidate = __DIR__ . "/views/{$page}.php";
+    if (file_exists($candidate)) {
+        include $candidate;
+        exit;
+    }
+
     http_response_code(404);
     error_log("Invalid page decode: $page");
     include 'views/404.php';
