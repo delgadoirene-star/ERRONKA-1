@@ -44,8 +44,9 @@ RUN printf "%s\n" "error_reporting = E_ALL" "display_errors = On" "log_errors = 
 # Ensure correct permissions for web server user
 RUN chown -R www-data:www-data /var/www/html
 
-# Trust Traefik so logs show real client IP (Docker network 172.16.0.0/12 is typical)
-RUN printf "RemoteIPHeader X-Forwarded-For\nRemoteIPTrustedProxy 10.0.0.0/8\nRemoteIPTrustedProxy 172.16.0.0/12\nRemoteIPTrustedProxy 192.168.0.0/16\n" > /etc/apache2/conf-enabled/remoteip.conf
+# Enable only what you need, and remove the remoteip conf that breaks Apache
+RUN a2enmod rewrite headers \
+ && rm -f /etc/apache2/conf-enabled/remoteip.conf /etc/apache2/conf-available/remoteip.conf || true
 
 EXPOSE 80
 
