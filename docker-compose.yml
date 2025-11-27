@@ -8,16 +8,15 @@ services:
       - --providers.docker.exposedbydefault=false
       - --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443
-      - --certificatesresolvers.le.acme.email=delgado.irene@uni.eus
-      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
-      - --certificatesresolvers.le.acme.httpchallenge=true
-      - --certificatesresolvers.le.acme.httpchallenge.entrypoint=web
+      - --entrypoints.websecure.http.tls=true
+      - --entrypoints.websecure.http.tls.certificates[0].certFile=/certs/server.crt
+      - --entrypoints.websecure.http.tls.certificates[0].keyFile=/certs/server.key
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./letsencrypt:/letsencrypt
+      - ./certs:/certs:ro
     networks:
       - traefik-net
     restart: always
@@ -26,37 +25,14 @@ services:
     build: .
     labels:
       - traefik.enable=true
-      - traefik.http.routers.app.rule=Host(`app.yourdomain.com`)     # <<< your real FQDN
+      - traefik.http.routers.app.rule=Host(`igai.lan`)
       - traefik.http.routers.app.entrypoints=websecure
-      - traefik.http.routers.app.tls=true
-      - traefik.http.routers.app.tls.certresolver=le
-      - traefik.http.services.app.loadbalancer.server.port=80        # tell Traefik the internal port
+      - traefik.http.services.app.loadbalancer.server.port=80
       # HTTP -> HTTPS redirect
-      - traefik.http.routers.app-http.rule=Host(`app.yourdomain.com`)
+      - traefik.http.routers.app-http.rule=Host(`igai.lan`)
       - traefik.http.routers.app-http.entrypoints=web
       - traefik.http.routers.app-http.middlewares=redirectscheme
-      # Middlewares
       - traefik.http.middlewares.redirectscheme.redirectscheme.scheme=https
-      - traefik.http.middlewares.hsts.headers.stsSeconds=31536000
-      - traefik.http.middlewares.hsts.headers.stsIncludeSubdomains=true
-      - traefik.http.middlewares.hsts.headers.stsPreload=true
-    depends_on:
-      - db
-    volumes:
-      - .:/var/www/html
-    networks:
-      - traefik-net
-    restart: always
-
-  db:
-    image: mysql:8.0
-    environment:
-      MYSQL_ROOT_PASSWORD: rootpass
-      MYSQL_DATABASE: xabala_db
-      MYSQL_USER: xabala_user
-      MYSQL_PASSWORD: xabala_pass
-    volumes:
-      - ./xabala.sql:/docker-entrypoint-initdb.d/init.sql:ro
     networks:
       - traefik-net
     restart: always
