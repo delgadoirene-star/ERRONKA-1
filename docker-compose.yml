@@ -27,13 +27,15 @@ services:
       - traefik.http.routers.app.rule=Host(`app.lan.local`)
       - traefik.http.routers.app.entrypoints=websecure
       - traefik.http.services.app.loadbalancer.server.port=80
-      # HTTP -> HTTPS redirect
       - traefik.http.routers.app-http.rule=Host(`app.lan.local`)
       - traefik.http.routers.app-http.entrypoints=web
       - traefik.http.routers.app-http.middlewares=redirectscheme
       - traefik.http.middlewares.redirectscheme.redirectscheme.scheme=https
+      - traefik.docker.network=zabala_traefik-net    # use your actual network name
     networks:
       - traefik-net
+    volumes:
+      - .:/var/www/html
     restart: always
 
 networks:
