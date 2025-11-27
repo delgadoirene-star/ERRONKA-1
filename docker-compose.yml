@@ -17,27 +17,27 @@ services:
       - ./traefik.yml:/etc/traefik/traefik.yml:ro
       - ./certs:/certs:ro
     networks:
-      - traefik-net
+      - zabala_traefik-net
     restart: always
 
   web:
     build: .
     labels:
       - traefik.enable=true
-      - traefik.http.routers.app.rule=Host(`app.lan.local`)
+      - traefik.http.routers.app.rule=Host(`igai.lan`)
       - traefik.http.routers.app.entrypoints=websecure
       - traefik.http.services.app.loadbalancer.server.port=80
-      - traefik.http.routers.app-http.rule=Host(`app.lan.local`)
+      - traefik.http.routers.app-http.rule=Host(`igai.lan`)
       - traefik.http.routers.app-http.entrypoints=web
       - traefik.http.routers.app-http.middlewares=redirectscheme
       - traefik.http.middlewares.redirectscheme.redirectscheme.scheme=https
       - traefik.docker.network=zabala_traefik-net
     networks:
-      - traefik-net
+      - zabala_traefik-net
     volumes:
       - .:/var/www/html
     restart: always
 
 networks:
-  traefik-net:
-    driver: bridge
+  zabala_traefik-net:
+    external: true
