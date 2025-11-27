@@ -31,7 +31,7 @@ services:
       - traefik.http.routers.app-http.entrypoints=web
       - traefik.http.routers.app-http.middlewares=redirectscheme
       - traefik.http.middlewares.redirectscheme.redirectscheme.scheme=https
-      - traefik.docker.network=zabala_traefik-net    # use your actual network name
+      - traefik.docker.network=zabala_traefik-net
     networks:
       - traefik-net
     volumes:
