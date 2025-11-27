@@ -5,8 +5,10 @@ services:
     build: .
     volumes:
       - .:/var/www/html
+      - ./certs:/etc/apache2/certs:ro
     ports:
-      - "80:80"
+      - "8080:80"   # HTTP optional (use 8080 to avoid conflicts)
+      - "443:443"  # HTTPS
     restart: always
 
   db:
