@@ -5,12 +5,13 @@ services:
     image: traefik:v3.1
     command:
       - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
       - --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443
-      - --certificatesresolvers.le.acme.httpchallenge=true
-      - --certificatesresolvers.le.acme.httpchallenge.entrypoint=web
       - --certificatesresolvers.le.acme.email=admin@example.com
       - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.le.acme.httpchallenge=true
+      - --certificatesresolvers.le.acme.httpchallenge.entrypoint=web
     ports:
       - "80:80"
       - "443:443"
@@ -23,16 +24,21 @@ services:
     build: .
     labels:
       - traefik.enable=true
+      # HTTPS router
       - traefik.http.routers.app.rule=Host(`app.example.com`)
       - traefik.http.routers.app.entrypoints=websecure
+      - traefik.http.routers.app.tls=true
       - traefik.http.routers.app.tls.certresolver=le
+      - traefik.http.routers.app.middlewares=redirectscheme,hsts
+      # HTTP -> HTTPS redirect
+      - traefik.http.routers.app-http.rule=Host(`app.example.com`)
+      - traefik.http.routers.app-http.entrypoints=web
+      - traefik.http.routers.app-http.middlewares=redirectscheme
+      # Middlewares
+      - traefik.http.middlewares.redirectscheme.redirectscheme.scheme=https
       - traefik.http.middlewares.hsts.headers.stsSeconds=31536000
-      - traefik.http.routers.app.middlewares=hsts
-    environment:
-      DB_HOST: db
-      DB_NAME: xabala_db
-      DB_USER: xabala_user
-      DB_PASS: xabala_pass
+      - traefik.http.middlewares.hsts.headers.stsIncludeSubdomains=true
+      - traefik.http.middlewares.hsts.headers.stsPreload=true
     depends_on:
       - db
     volumes:
@@ -47,5 +53,5 @@ services:
       MYSQL_USER: xabala_user
       MYSQL_PASSWORD: xabala_pass
     volumes:
-      - ./xabala.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./xabala.sql:/docker-entrypoint-initdb.d/init.sql:ro
     restart: always
