@@ -8,7 +8,7 @@ services:
       - --providers.docker.exposedbydefault=false
       - --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443
-      - --certificatesresolvers.le.acme.email=admin@example.com
+      - --certificatesresolvers.le.acme.email=delgado.irene@uni.eus
       - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
       - --certificatesresolvers.le.acme.httpchallenge=true
       - --certificatesresolvers.le.acme.httpchallenge.entrypoint=web
@@ -18,20 +18,21 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./letsencrypt:/letsencrypt
+    networks:
+      - traefik-net
     restart: always
 
   web:
     build: .
     labels:
       - traefik.enable=true
-      # HTTPS router
-      - traefik.http.routers.app.rule=Host(`app.example.com`)
+      - traefik.http.routers.app.rule=Host(`app.yourdomain.com`)     # <<< your real FQDN
       - traefik.http.routers.app.entrypoints=websecure
       - traefik.http.routers.app.tls=true
       - traefik.http.routers.app.tls.certresolver=le
-      - traefik.http.routers.app.middlewares=redirectscheme,hsts
+      - traefik.http.services.app.loadbalancer.server.port=80        # tell Traefik the internal port
       # HTTP -> HTTPS redirect
-      - traefik.http.routers.app-http.rule=Host(`app.example.com`)
+      - traefik.http.routers.app-http.rule=Host(`app.yourdomain.com`)
       - traefik.http.routers.app-http.entrypoints=web
       - traefik.http.routers.app-http.middlewares=redirectscheme
       # Middlewares
@@ -43,6 +44,8 @@ services:
       - db
     volumes:
       - .:/var/www/html
+    networks:
+      - traefik-net
     restart: always
 
   db:
@@ -54,4 +57,10 @@ services:
       MYSQL_PASSWORD: xabala_pass
     volumes:
       - ./xabala.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - traefik-net
     restart: always
+
+networks:
+  traefik-net:
+    driver: bridge
