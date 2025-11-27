@@ -21,7 +21,3 @@ Options -Indexes
     RewriteCond %{REQUEST_URI} !\.(ico|css|js|png|jpg|gif|woff|woff2|ttf|eot|svg)$ [NC]
     RewriteRule ^(.*)$ /router.php [L]
 </IfModule>
-
-<IfModule mod_setenvif.c>
-    SetEnvIfNoCase X-Forwarded-Proto https HTTPS=on
-</IfModule>

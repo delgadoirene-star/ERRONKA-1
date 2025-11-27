@@ -38,6 +38,17 @@ services:
       - .:/var/www/html
     restart: always
 
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: xabala_db
+      MYSQL_USER: xabala_user
+      MYSQL_PASSWORD: xabala_pass
+    volumes:
+      - ./xabala.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: always
+
 networks:
   zabala_traefik-net:
     external: true

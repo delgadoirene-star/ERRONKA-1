@@ -12,7 +12,7 @@ RUN apt-get update \
         git \
         default-mysql-client \
     && docker-php-ext-install mysqli pdo_mysql bcmath \
-    && a2enmod rewrite headers remoteip \
+    && a2enmod rewrite headers \
     && echo "ServerName localhost" > /etc/apache2/conf-available/servername.conf \
     && a2enconf servername \
     && rm -rf /var/lib/apt/lists/*
