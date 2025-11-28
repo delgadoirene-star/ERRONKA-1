@@ -7,8 +7,8 @@ services:
       - .:/var/www/html
       - ./certs:/etc/apache2/certs:ro
     ports:
-      - "8080:80"   # HTTP optional (use 8080 to avoid conflicts)
-      - "443:443"  # HTTPS
+      - "8080:80"
+      - "10.10.1.100:443:443"
     restart: always
 
   db:
