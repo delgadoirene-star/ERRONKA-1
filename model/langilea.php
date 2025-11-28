@@ -22,7 +22,6 @@ class Langilea {
         $this->foto = $foto;
     }
 
-    // Getters
     public function getId() { return $this->id; }
     public function getUsuarioId() { return $this->usuario_id; }
     public function getDepartamendua() { return $this->departamendua; }
@@ -30,13 +29,11 @@ class Langilea {
     public function getDataKontratazio() { return $this->data_kontratazio; }
     public function getSoldata() { return $this->soldata; }
 
-    // Setters
     public function setId($id) { $this->id = $id; }
     public function setDepartamendua($departamendua) { $this->departamendua = $departamendua; }
     public function setPozisio($pozisio) { $this->pozisio = $pozisio; }
     public function setSoldata($soldata) { $this->soldata = $soldata; }
 
-    // CRUD
     public static function all(mysqli $conn): array {
         $rows=[]; $res=$conn->query("SELECT id, usuario_id, departamendua, pozisio, data_kontratazio, soldata, telefonoa, foto FROM langilea ORDER BY id DESC");
         while($r=$res->fetch_assoc()){ $rows[]=$r; } return $rows;

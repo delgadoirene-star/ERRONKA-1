@@ -8,3 +8,8 @@ node_modules/
 vendor/
 .DS_Store
 *.tmp
+
+# PHPUnit / Testing
+.phpunit.cache/
+coverage/
+.phpunit.result.cache

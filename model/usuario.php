@@ -24,7 +24,6 @@ class Usuario {
         $this->aktibo = 1;
     }
 
-    // Getters
     public function getId() { return $this->id; }
     public function getIzena() { return $this->izena; }
     public function getAbizena() { return $this->abizena; }
@@ -34,11 +33,9 @@ class Usuario {
     public function getRol() { return $this->rol; }
     public function getNombreCompleto() { return $this->izena . " " . $this->abizena; }
 
-    // Setters
     public function setId($id) { $this->id = $id; }
     public function setRol($rol) { $this->rol = $rol; }
 
-    // Sortzea
     public function sortu($conn) {
         if (!$conn) {
             error_log("Usuario::sortu called without DB connection");
@@ -55,7 +52,6 @@ class Usuario {
         return $ok;
     }
 
-    // Email edo NANa bidez bilatzea
     public static function lortuEmailEdoNANegatik($conn, $email, $nan): ?array {
         if (!$conn) return null;
         $stmt = $conn->prepare("SELECT * FROM usuario WHERE email = ? OR nan = ?");
@@ -68,7 +64,6 @@ class Usuario {
         return $row;
     }
     
-    // ID bidez bilatzea
     public static function lortuIdAgatik($conn, $id) {
         if (!$conn) return null;
         $stmt = $conn->prepare("SELECT * FROM usuario WHERE id = ?");
@@ -81,7 +76,6 @@ class Usuario {
         return $row ?: null;
     }
 
-    // NOTE: removed strict mysqli type to avoid TypeError when $conn is null
     public static function lortuEmailAgatik($conn, string $email): ?array {
         if (!$conn) return null;
         $stmt = $conn->prepare("SELECT * FROM usuario WHERE email = ?");
@@ -94,7 +88,6 @@ class Usuario {
         return $row ?: null;
     }
 
-    // Pasahitza aldatzea
     public function aldatuPasahitza($conn, $pasahitz_berria) {
         if (!$conn) return false;
         $hash = password_hash($pasahitz_berria, PASSWORD_DEFAULT);

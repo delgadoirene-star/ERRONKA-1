@@ -13,6 +13,7 @@ require_once __DIR__ . '/vendor/autoload.php';
 
 // Start session via Seguritatea
 require_once __DIR__ . '/model/seguritatea.php';
+/** @var class-string Seguritatea */
 Seguritatea::hasieratuSesioa();
 
 // Load config first (defines constants used by views) then attempt DB connection
@@ -34,6 +35,7 @@ $db_ok = (isset($conn) && $conn !== null);
 
 // Initialize Hashids globally if available
 global $hashids;
+/** @var \Hashids\Hashids|null $hashids */
 $hashids = class_exists('\\Hashids\\Hashids') ? new \Hashids\Hashids('ZAB_IGAI_PLAT_GEN', 8) : null;
 
 /* Replace faulty helpers with correct implementations */
@@ -74,6 +76,7 @@ if (!function_exists('current_user')) {
 		$uid = $_SESSION['usuario_id'] ?? null;
 		if (!$uid) return null;
 		if (class_exists('Usuario') && method_exists('Usuario', 'lortuIdAgatik')) {
+			/** @var class-string Usuario */
 			return Usuario::lortuIdAgatik($conn, $uid);
 		}
 		return null;

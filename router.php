@@ -4,17 +4,14 @@ require_once __DIR__ . '/bootstrap.php';
 $request = $_SERVER['REQUEST_URI'];
 $path = parse_url($request, PHP_URL_PATH) ?: '/';
 
-// Normalize root and trailing slash to home
 if ($path === '/' || rtrim($path, '/') === '') {
     include 'views/home.php';
     exit;
 }
 
-// Avoid directory traversal; keep only basename
-$base = basename($path); // includes .php if present
+$base = basename($path);
 $page = basename($path, '.php') ?: 'home';
 
-// Legacy without Hashids
 global $hashids;
 if ($hashids === null) {
     if ($page === '' || $page === 'router' || $page === 'home') {
@@ -31,13 +28,11 @@ if ($hashids === null) {
     exit;
 }
 
-// With Hashids
 if ($page === '' || $page === 'router' || $page === 'home') {
     include 'views/home.php';
     exit;
 }
 
-// Guard: only try decoding if basename has no dots other than optional .php
 if (strpos($base, '.') === false || substr($base, -4) === '.php') {
     $decoded = $hashids->decode($page);
     if ($decoded && isset($decoded[0])) {
@@ -59,7 +54,6 @@ if (strpos($base, '.') === false || substr($base, -4) === '.php') {
     }
 }
 
-// Fallback: literal view name
 $candidate = __DIR__ . "/views/{$page}.php";
 if (file_exists($candidate)) {
     include $candidate;

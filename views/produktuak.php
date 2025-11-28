@@ -4,6 +4,8 @@ require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../model/produktua.php';
 require_once __DIR__ . '/../model/seguritatea.php';
 
+if (empty($_SESSION['usuario_id'])) { redirect_to('/index.php'); }
+
 global $db_ok, $conn;
 if (!$db_ok || !$conn) { echo '<div class="alert alert-error">DB ez dago prest.</div>'; return; }
 
@@ -28,7 +30,10 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
                 'stock_minimo'=>(int)($_POST['stock_minimo']??0),
             ];
             if ($data['izena']==='') $errorea="Izena derrigorrezkoa.";
-            elseif (Produktua::create($conn,$data)) $mezua="Produktua sortuta.";
+            elseif (Produktua::create($conn,$data)) {
+                $mezua="Produktua sortuta.";
+                Seguritatea::logSeguritatea($conn, "PRODUKTUA_CREATED", "Izena: {$data['izena']}", $_SESSION['usuario_id'] ?? null);
+            }
             else $errorea="Sortzeak huts egin du.";
         } elseif ($action==='update') {
             $id=(int)($_POST['id']??0);
@@ -40,11 +45,17 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
                 'stock'=>(int)($_POST['stock']??0),
                 'stock_minimo'=>(int)($_POST['stock_minimo']??0),
             ];
-            if ($id && Produktua::update($conn,$id,$data)) $mezua="Produktua eguneratua.";
+            if ($id && Produktua::update($conn,$id,$data)) {
+                $mezua="Produktua eguneratua.";
+                Seguritatea::logSeguritatea($conn, "PRODUKTUA_UPDATED", "Produktua ID: {$id}", $_SESSION['usuario_id'] ?? null);
+            }
             else $errorea="Eguneratzeak huts egin du.";
         } elseif ($action==='delete') {
             $id=(int)($_POST['id']??0);
-            if ($id && Produktua::delete($conn,$id)) $mezua="Ezabatua.";
+            if ($id && Produktua::delete($conn,$id)) {
+                $mezua="Ezabatua.";
+                Seguritatea::logSeguritatea($conn, "PRODUKTUA_DELETED", "Produktua ID: {$id}", $_SESSION['usuario_id'] ?? null);
+            }
             else $errorea="Ezabaketak huts egin du.";
         }
     }

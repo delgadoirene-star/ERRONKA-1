@@ -1,11 +1,10 @@
 <?php
-// Ensure bootstrap is loaded so session/CSRF helper is available
 require_once __DIR__ . '/../bootstrap.php';
 $baseUrl = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 if ($baseUrl === '/' || $baseUrl === '\\') { $baseUrl = ''; }
 
-$cssPath    = $baseUrl . '/style/style.css';
-$headerBg   = $baseUrl . '/style/img/galletas.jpg';
+$cssPath    = $baseUrl . '/public/assets/style.css';
+$headerBg   = $baseUrl . '/public/assets/img/galletas.jpg';
 $indexPath  = $baseUrl . '/index.php';
 $signinPath = $baseUrl . '/signin.php';
 
@@ -24,7 +23,6 @@ $csrf_token = $_SESSION['csrf_token'];
 </head>
 <body class="home-page">
 <?php
-// Show DB status notice if DB is not available (graceful message)
 global $db_ok;
 if (empty($db_ok)) {
     echo '<div class="alert alert-warning" style="text-align:center; padding:8px; margin:0;">' .

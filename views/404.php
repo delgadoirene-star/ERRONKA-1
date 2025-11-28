@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <title>404 - Ez da aurkitu</title>
-  <link rel="stylesheet" href="../style/style.css">
+  <link rel="stylesheet" href="/public/assets/style.css">
 </head>
 <body>
   <div class="container" style="padding:3rem;text-align:center;">

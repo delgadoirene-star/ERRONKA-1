@@ -5,17 +5,36 @@ services:
     build: .
     volumes:
       - .:/var/www/html
+    expose:
+      - "80"
+    restart: always
+
+  caddy:
+    image: caddy:2-alpine
     ports:
       - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./certs:/etc/caddy/certs:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
     restart: always
 
   db:
     image: mysql:8.0
     environment:
       MYSQL_ROOT_PASSWORD: rootpass
-      MYSQL_DATABASE: xabala_db
-      MYSQL_USER: xabala_user
-      MYSQL_PASSWORD: xabala_pass
+      MYSQL_DATABASE: zabala_db
+      MYSQL_USER: zabala_user
+      MYSQL_PASSWORD: zabala_pass
     volumes:
-      - ./xabala.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./zabala.sql:/docker-entrypoint-initdb.d/init.sql:ro
     restart: always
+
+volumes:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,31 @@
+# Caddy configuration for Zabala Platform
+# HTTPS auto-sinatu zertifikatuarekin
+
+localhost, 127.0.0.1, zabala.local {
+    # Reverse proxy to Apache container
+    reverse_proxy web:80
+    
+    # SSL zertifikatuak erabili
+    tls /etc/caddy/certs/zabala.crt /etc/caddy/certs/zabala.key
+    
+    # Security headers
+    header {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    }
+    
+    # Logging
+    log {
+        output stdout
+        format console
+    }
+}
+
+# Produkziorako domeino errealekin:
+# yourdomain.com {
+#     reverse_proxy web:80
+#     tls your-email@example.com
+# }

@@ -1,6 +1,8 @@
--- Xabala Enpresen Datu-basea
-CREATE DATABASE IF NOT EXISTS xabala_db;
-USE xabala_db;
+-- Test Database Schema for Zabala Platform
+-- This schema is identical to production but for testing purposes
+
+CREATE DATABASE IF NOT EXISTS zabala_test;
+USE zabala_test;
 
 CREATE TABLE IF NOT EXISTS usuario (
   id INT AUTO_INCREMENT PRIMARY KEY,

@@ -26,7 +26,6 @@ class Salmenta {
         $this->oharra = $oharra;
     }
 
-    // Getters
     public function getId() { return $this->id; }
     public function getLangileId() { return $this->langile_id; }
     public function getProduktuId() { return $this->produktu_id; }
@@ -39,11 +38,9 @@ class Salmenta {
     public function getBezeroaTelefonoa() { return $this->bezeroa_telefonoa; }
     public function getOharra() { return $this->oharra; }
 
-    // Setters
     public function setId($id) { $this->id = $id; }
     public function setDataSalmenta($data) { $this->data_salmenta = $data; }
 
-    // Sortzea
     public function sortu($conn) {
 		if (!$conn) {
 			error_log("Salmenta::sortu called without DB connection");
@@ -83,7 +80,6 @@ class Salmenta {
         return $emaitza;
     }
 
-    // Guztiak lortu
     public static function lortuGuztiak($conn, $langile_id = null) {
 		if (!$conn) return [];
         if ($langile_id) {
@@ -122,7 +118,6 @@ class Salmenta {
         return $salmentak;
     }
 
-    // Data tarte batean salmentak
     public static function lortuDataTarteAn($conn, $data_hasiera, $data_bukaera) {
 		if (!$conn) return [];
         $sql = "SELECT s.*, u.izena, u.abizena, p.izena as produktu_izena 
@@ -149,7 +144,6 @@ class Salmenta {
         return $salmentak;
     }
 
-    // Salmentaren guztira kalkulatzea
     public static function kalkulaSalmentaGuztira($conn, $langile_id = null) {
 		if (!$conn) return 0;
         if ($langile_id) {
@@ -169,7 +163,6 @@ class Salmenta {
         return $row['guztira'] ?? 0;
     }
 
-    // Eguneratzea
     public function eguneratu($conn) {
 		if (!$conn) return false;
         $sql = "UPDATE salmenta SET kantitatea=?, prezioa_unitarioa=?, 
@@ -183,10 +176,8 @@ class Salmenta {
         return $emaitza;
     }
 
-    // Ezabatzea
     public static function ezabatu($conn, $id) {
 		if (!$conn) return false;
-        // Correct deletion target (salmenta), not langilea
         $stmt = $conn->prepare("DELETE FROM salmenta WHERE id = ?");
         $stmt->bind_param("i", $id);
         $emaitza = $stmt->execute();
@@ -194,7 +185,6 @@ class Salmenta {
         return $emaitza;
     }
 
-    // Estatistikak
     public static function lortuStatistikak($conn) {
 		if (!$conn) return null;
         $sql = "SELECT 

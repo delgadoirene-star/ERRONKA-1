@@ -14,9 +14,13 @@ $isAdmin = ($_SESSION['usuario_rol'] ?? '') === 'admin';
 
 $totalProduktu = $conn->query("SELECT COUNT(*) c FROM produktua")->fetch_assoc()['c'] ?? 0;
 $totalSalmenta = $conn->query("SELECT COUNT(*) c FROM salmenta")->fetch_assoc()['c'] ?? 0;
-$nireSalmenta  = $conn->query("SELECT COUNT(*) c FROM salmenta WHERE langile_id=".$userId)->fetch_assoc()['c'] ?? 0;
 
-// Remove old bottom links; use only the navbar for navigation
+$stmt = $conn->prepare("SELECT COUNT(*) c FROM salmenta WHERE langile_id=?");
+$stmt->bind_param("i", $userId);
+$stmt->execute();
+$nireSalmenta = $stmt->get_result()->fetch_assoc()['c'] ?? 0;
+$stmt->close();
+
 $pageTitle = "Dashboard";
 $active = 'dashboard';
 require __DIR__ . '/partials/header.php';

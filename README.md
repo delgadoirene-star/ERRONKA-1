@@ -1,22 +1,26 @@
-IMPORTANTE INSTALACCION
-Steps to Import xabala.sql
-Get Container Name:
+GARRANTZITSUA - INSTALAZIOA
+Zabala.sql inportatzeko pausoak:
 
-Run: docker compose ps
-Note the DB container name (e.g., erronka-1_db-1).
-Copy File to Container:
+1. Edukiontzi-izena lortu:
 
-docker cp xabala.sql <container_name>:/tmp/xabala.sql (replace <container_name>).
-Import Inside Container:
+Exekutatu: docker compose ps
+Kontu egin DB edukiontziaren izenarekin (adib.: erronka-1_db-1).
 
-docker compose exec db sh -c 'mysql -u root -p"$MYSQL_ROOT_PASSWORD" xabala_db < /tmp/xabala.sql'
-This uses the env var for the password.
-Verify:
+2. Fitxategia edukiontzira kopiatu:
 
-docker compose exec db mysql -u root -p xabala_db (enter password: password123)
-Run: SHOW TABLES;
+docker cp zabala.sql <edukiontzi-izena>:/tmp/zabala.sql (ordeztu <edukiontzi-izena>).
 
-# XABALA Enpresen Plataforma 🏭
+3. Edukiontziaren barruan inportatu:
+
+docker compose exec db sh -c 'mysql -u root -p"$MYSQL_ROOT_PASSWORD" zabala_db < /tmp/zabala.sql'
+Ingurune-aldagaia erabiltzen du pasahitzarentzat.
+
+4. Egiaztatu:
+
+docker compose exec db mysql -u root -p zabala_db (sartu pasahitza: password123)
+Exekutatu: SHOW TABLES;
+
+# ZABALA Enpresen Plataforma 🏭
 
 Enpresen kudeaketa eta salmentaren sistema PHP-n garatuta.
 
@@ -52,94 +56,167 @@ Enpresen kudeaketa eta salmentaren sistema PHP-n garatuta.
 
 ## 📦 Instalazioa
 
-### Docker bidez (gomendatua - ez erabili XAMPP)
+### Docker bidez (gomendatua)
 1. `docker compose up --build`
-2. Datu-basea automatikoki sortzen da eta `xabala.sql` inportatzen da.
-3. Web aplikazioa `http://localhost`-n eskuragarri (ez XAMPP erabili).
+2. Datu-basea automatikoki sortzen da eta `zabala.sql` inportatzen da.
+3. Web-aplikazioa eskuragarri: `http://localhost`
 
-### Eskuz instalazioa (ez gomendatua)
+### Eskuzko instalazioa (ez da gomendatzen)
 1. Datu-basea sortzea
    ```bash
-   mysql -u root -p < config/xabala.sql
+   mysql -u root -p < config/zabala.sql
    ```
 
 2. Fitxategien baimenak
    ```bash
-   chmod 755 logs/
-   chmod 755 uploads/
+   chmod 755 storage/logs/
+   chmod 755 storage/uploads/
    ```
 
 3. Konfigurazioa
    Editatu `config/config.php` zure ezarpenarekin.
 
-## 🚀 Erabilea
+## 🚀 Erabilera
 
-### Login
+### Saioa hastea (Login)
 - **URL**: `http://localhost/index.php`
-- Email eta pasahitza sortzea **signin.php** bidez
+- Emaila eta pasahitza sortzea **signin.php** bidez
 
-### Dashboard
+### Aginte-panela (Dashboard)
 Langileak, produktuak eta salmentak kudeatzea
 
-### Admin baimena
-Datu-basean `rol` eremua `admin` bihurtzea
+### Administratzaile-baimena
+Datu-basean `rol` eremua `admin` bihurtu:
+```sql
+UPDATE usuario SET rol='admin' WHERE email='zure@emaila.eus';
+```
 
 ## 📁 Direktorioen egitura
 
 ```
 ERRONKA-1/
+├── .github/
+│   ├── copilot-instructions.md  # AI coding guidelines
+│   └── workflows/
 ├── config/
-│   ├── konexioa.php
-│   ├── config.php
-│   └── xabala.sql
+│   ├── konexioa.php            # Database connection
+│   ├── config.php              # Application configuration
+│   └── zabala.sql              # Database schema
 ├── model/
-│   ├── usuario.php
-│   ├── langilea.php
-│   ├── produktua.php
-│   ├── salmentaka.php
-│   └── seguritatea.php
+│   ├── usuario.php             # User model
+│   ├── langilea.php            # Employee model
+│   ├── produktua.php           # Product model
+│   ├── salmenta.php            # Sales model
+│   ├── seguritatea.php         # Security utilities
+│   └── fitxategia.php          # File upload handler
 ├── views/
-│   ├── dashboard.php
-│   ├── langileak.php
-│   ├── produktuak.php
-│   └── salmentak.php
-├── style/
-│   └── style.css
-├── logs/
-│   ├── security.log (sortuta automatikoki)
-│   └── error.log (sortuta automatikoki)
-├── assets/
-│   └── img/
-│       └── xabala-logo.png (opsionala)
-├── index.php (Login)
-├── signin.php (Erregistroa)
-├── logout.php (Saioa itxi)
-├── .htaccess (Segurtasuna)
-└── README.md (Dokumentazioa)
+│   ├── dashboard.php           # Main dashboard
+│   ├── langileak.php           # Employees view
+│   ├── produktuak.php          # Products view
+│   ├── salmentak.php           # Sales view
+│   ├── nire_salmentak.php      # My sales view
+│   ├── langilea_kudeaketa.php  # Employee management
+│   ├── home.php                # Landing page
+│   └── partials/
+│       ├── header.php          # Common header
+│       ├── navbar.php          # Navigation bar
+│       └── footer.php          # Common footer
+├── public/
+│   └── assets/
+│       ├── style.css           # Main stylesheet
+│       └── img/                # Images
+├── storage/
+│   ├── logs/
+│   │   ├── security.log        # Security audit log
+│   │   └── error.log           # Error log
+│   └── uploads/                # User uploaded files
+├── tests/                      # PHPUnit test suite
+│   ├── bootstrap.php           # Test environment setup
+│   ├── zabala_test.sql        # Test database schema
+│   └── Unit/                   # Unit tests
+│       ├── UsuarioTest.php     # Usuario model tests
+│       ├── SeguritateaTest.php # Security tests
+│       ├── LangileaTest.php    # Langilea model tests
+│       └── ProduktuaTest.php   # Produktua model tests
+├── scripts/
+│   └── seed_admin.php          # Admin user seeder
+├── index.php                   # Login entry point
+├── signin.php                  # User registration
+├── logout.php                  # Session logout
+├── router.php                  # Hashids URL router
+├── bootstrap.php               # Application bootstrap
+├── .htaccess                   # Apache security config
+├── docker-compose.yml          # Docker orchestration
+├── Dockerfile                  # Docker container config
+└── README.md                   # Documentation
 ```
 
 ## 🔐 Segurtasun-gomendioak
 
-1. **HTTPS erabili**
-2. **Pasahitza sendoa sortu** (min. 12 charaktere)
-3. **Loguak kontrol egin** regularly
-4. **SQL Injekzioa**: Prepared statements erabiltzen ari gara
-5. **XSS Protekzioa**: `htmlspecialchars()` erabilita
-6. **CSRF Protekzioa**: Tokenak bertan behera
+1. **HTTPS erabili** produkzioan
+2. **Pasahitz sendoa sortu** (gutxienez 12 karaktere, maiuskulak, minuskulak, zenbakiak eta ikur bereziak)
+3. **Egunkari-fitxategiak aztertu** erregularki (`storage/logs/`)
+4. **SQL Injection babesa**: Prestatutako kontsultak (prepared statements) erabiltzen ditugu
+5. **XSS Babesa**: `htmlspecialchars()` funtzioa erabiltzen da
+6. **CSRF Babesa**: Token bidezko babesa inplementatuta
+7. **Rate Limiting**: Login eta erregistro saioak mugatuta
+8. **Fitxategi igoerak**: MIME mota eta tamaina balioztapena
 
-## 📝 Erabiltzaile adibidea
+## 📝 Erabiltzaile-adibidea
 
 ```
-Email: test@xabala.eus
+Emaila: test@zabala.eus
 Pasahitza: Test12345!@#
 ```
 
+**Oharra**: Erabiltzaile hau ez da lehenetsia. Erregistratu `signin.php` bidez edo exekutatu:
+```bash
+docker compose exec web php scripts/seed_admin.php
+```
+
+## 🧪 Testak Exekutatu
+
+### PHPUnit instalatu
+```bash
+composer install
+```
+
+### Test datu-basea prestatu
+```bash
+docker compose exec db mysql -u root -p"rootpass" < tests/zabala_test.sql
+```
+
+### Testak exekutatu
+```bash
+# Test guztiak
+composer test
+
+# Test zehatza
+vendor/bin/phpunit tests/Unit/UsuarioTest.php
+
+# Code coverage
+composer test:coverage
+```
+
+**Test Suite**: 40+ unit testak  
+📄 Dokumentazio osoa: `TESTING.md`
+
 ## ⚠️ Oharra
 
-Datu basenaren kopia egin aurretik produkzioan jarri!
+Produkziora pasa aurretik, egiaztatu:
+- ✅ Datu-basearen babeskopia egina
+- ✅ HTTPS gaituta
+- ✅ `display_errors = Off` PHP konfigurazioan
+- ✅ Ingurune-aldagaiak ondo konfiguratuta
+- ✅ Segurtasun-goiburuak aktibatuta (`.htaccess`)
 
-## 📞 Support
+## 📞 Laguntza
 
-Arazo bat egonez gero, log fitxategiak kontsultatu:
-- `logs/security.log`
-- `logs/error.log`
+Arazoren bat badago, egiaztatu egunkari-fitxategiak:
+- `storage/logs/security.log` - Segurtasun-gertaerak
+- `storage/logs/error.log` - Errore-mezuak
+
+Datu-baseko audit-loga:
+```sql
+SELECT * FROM seguritatea_loga ORDER BY created_at DESC LIMIT 50;
+```

@@ -17,7 +17,6 @@ class Produktua {
         $this->stock_minimo = 10;
     }
 
-    // Getters
     public function getId() { return $this->id; }
     public function getIzena() { return $this->izena; }
     public function getDeskripzioa() { return $this->deskripzioa; }
@@ -26,13 +25,11 @@ class Produktua {
     public function getStock() { return $this->stock; }
     public function getStockMinimo() { return $this->stock_minimo; }
 
-    // Setters
     public function setId($id) { $this->id = $id; }
     public function setIzena($izena) { $this->izena = $izena; }
     public function setPrezioa($prezioa) { $this->prezioa = $prezioa; }
     public function setStock($stock) { $this->stock = $stock; }
 
-    // ====== CRUD static helpers ======
     public static function all(mysqli $conn): array {
         $rows = [];
         $res = $conn->query("SELECT id, izena, deskripzioa, kategoria, prezioa, stock, stock_minimo FROM produktua ORDER BY id DESC");

@@ -24,12 +24,11 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
     }
 }
 
-// Replace raw all/filter with joined helper
-$salmentak = Salmenta::lortuGuztiak($conn, $userId);
+$salmentak = Salmenta::lortuGuztiak($conn, $langile_id);
 $salmenta_guztira = Salmenta::kalkulaSalmentaGuztira($conn, $userId);
 
 // Add missing navbar link variables and absolute CSS path
-$cssHref           = "/style/style.css";
+$cssHref           = "/public/assets/style.css";
 $dashboardLink     = function_exists('page_link') ? page_link(1, 'dashboard') : '/views/dashboard.php';
 $langileakLink     = function_exists('page_link') ? page_link(2, 'langileak') : '/views/langileak.php';
 $produktuakLink    = function_exists('page_link') ? page_link(3, 'produktuak') : '/views/produktuak.php';

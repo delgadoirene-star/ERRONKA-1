@@ -34,7 +34,10 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
                 'foto'            => trim($_POST['foto'] ?? '')
             ];
             if (!$data['usuario_id']) $errorea='Erabiltzailea behar da.';
-            elseif (Langilea::create($conn,$data)) $mezua='Langilea sortua.';
+            elseif (Langilea::create($conn,$data)) {
+                $mezua='Langilea sortua.';
+                Seguritatea::logSeguritatea($conn, "LANGILEA_CREATED", "Usuario ID: {$data['usuario_id']}", $_SESSION['usuario_id'] ?? null);
+            }
             else $errorea='Sortzeak huts egin du.';
         } elseif ($action==='update') {
             $id = (int)($_POST['id'] ?? 0);
@@ -46,17 +49,24 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
                 'telefonoa'       => trim($_POST['telefonoa'] ?? ''),
                 'foto'            => trim($_POST['foto'] ?? '')
             ];
-            if ($id && Langilea::update($conn,$id,$data)) $mezua='Eguneratua.';
+            if ($id && Langilea::update($conn,$id,$data)) {
+                $mezua='Eguneratua.';
+                Seguritatea::logSeguritatea($conn, "LANGILEA_UPDATED", "Langilea ID: {$id}", $_SESSION['usuario_id'] ?? null);
+            }
             else $errorea='Eguneratzeak huts egin du.';
         } elseif ($action==='delete') {
             $id = (int)($_POST['id'] ?? 0);
-            if ($id && Langilea::delete($conn,$id)) $mezua='Ezabatua.';
+            if ($id && Langilea::delete($conn,$id)) {
+                $mezua='Ezabatua.';
+                Seguritatea::logSeguritatea($conn, "LANGILEA_DELETED", "Langilea ID: {$id}", $_SESSION['usuario_id'] ?? null);
+            }
             else $errorea='Ezabaketak huts egin du.';
         }
     }
 }
 
 $langileak = Langilea::all($conn);
+// Use query() for simple SELECT with no user input - safe here
 $usuarios = $conn->query("SELECT id, user FROM usuario ORDER BY id DESC")->fetch_all(MYSQLI_ASSOC);
 $dashboardLink = function_exists('page_link') ? page_link(1, 'dashboard') : '/views/dashboard.php';
 $pageTitle = "Langileak";

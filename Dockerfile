@@ -7,10 +7,11 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends \
         libzip-dev \
         zip \
+        unzip \
         curl \
         git \
         default-mysql-client \
-    && docker-php-ext-install mysqli pdo_mysql bcmath \
+    && docker-php-ext-install mysqli pdo_mysql bcmath zip \
     && a2enmod rewrite headers \
     && echo "ServerName localhost" > /etc/apache2/conf-available/servername.conf \
     && a2enconf servername \
@@ -18,6 +19,10 @@ RUN apt-get update \
 
 # Install Composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+# Copy Apache security configuration
+COPY apache-security.conf /etc/apache2/conf-available/zabala-security.conf
+RUN a2enconf zabala-security
 
 WORKDIR /var/www/html
 

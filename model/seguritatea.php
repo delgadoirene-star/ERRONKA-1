@@ -15,7 +15,6 @@ class Seguritatea {
             ]);
             ini_set('session.use_strict_mode', '1');
             session_start();
-            // Idle timeout
             $timeout = defined('SESSION_TIMEOUT') ? SESSION_TIMEOUT : 1800;
             if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > $timeout)) {
                 session_unset();
@@ -56,15 +55,35 @@ class Seguritatea {
         return ($_SESSION[$key] <= (defined('LOGIN_MAX_ATTEMPTS') ? LOGIN_MAX_ATTEMPTS : 5));
     }
     
+    // Generic rate limiting for any action
+    public static function egiaztaRateLimit(string $action, string $identifier, int $maxAttempts = 5): bool {
+        $key = 'rate_limit:' . $action . ':' . strtolower($identifier);
+        $_SESSION[$key] = ($_SESSION[$key] ?? 0) + 1;
+        $_SESSION[$key . ':time'] = $_SESSION[$key . ':time'] ?? time();
+        
+        if (time() - ($_SESSION[$key . ':time'] ?? 0) > 900) {
+            $_SESSION[$key] = 1;
+            $_SESSION[$key . ':time'] = time();
+        }
+        
+        return $_SESSION[$key] <= $maxAttempts;
+    }
+    
     // Login saioak garbitzea
     public static function zuritu_login_intentoak(string $email): void {
         $key = 'login_attempts:' . strtolower($email);
         unset($_SESSION[$key]);
     }
+    
+    // Generic rate limit reset
+    public static function zuritu_rate_limit(string $action, string $identifier): void {
+        $key = 'rate_limit:' . $action . ':' . strtolower($identifier);
+        unset($_SESSION[$key]);
+        unset($_SESSION[$key . ':time']);
+    }
 
     // ===== PASAHITZAREN BALIOZTAPENA (RA6) =====
     public static function balioztaPasahitza(string $password): bool {
-        // 8+ chars, upper, lower, digit, special
         $len = strlen($password) >= 8;
         $upp = preg_match('/[A-Z]/', $password);
         $low = preg_match('/[a-z]/', $password);
@@ -112,7 +131,6 @@ class Seguritatea {
         $data = $_SESSION[$key];
         $orain = time();
         
-        // 24 ordutan baizik ez
         if ($orain - $data['created'] > 86400) {
             unset($_SESSION[$key]);
             return false;
@@ -132,11 +150,9 @@ class Seguritatea {
             $ip = $_SERVER['REMOTE_ADDR'] ?? '';
             $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
             if (!$conn) {
-                // DB missing: fallback to file log
                 error_log("Seguritatea log (no DB): {$evento} - {$detaleak} - user: {$usuarioId} - ip: {$ip} - ua: {$ua}");
                 return;
             }
-            // Match table columns: event_type, event_scope, usuario_id, ip, detail
             $stmt = $conn->prepare("INSERT INTO seguritatea_loga (event_type, event_scope, usuario_id, ip, detail) VALUES (?, ?, ?, ?, ?)");
             if (!$stmt) {
                 error_log("Seguritatea log prepare error: " . $conn->error);
@@ -154,7 +170,6 @@ class Seguritatea {
     public static function egiaztaSesioa(): void {
         self::hasieratuSesioa();
         if (empty($_SESSION['usuario_id'])) {
-            // Use redirect helper if defined (bootstrap defines it after requiring this file).
             if (function_exists('redirect_to')) {
                 redirect_to('/signin.php');
             } else {

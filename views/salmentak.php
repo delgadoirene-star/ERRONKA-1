@@ -32,16 +32,22 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
                 'data_salmenta'     => $_POST['data_salmenta'] ?? date('Y-m-d'),
                 'bezeroa_izena'     => trim($_POST['bezeroa_izena'] ?? ''),
                 'bezeroa_nif'       => trim($_POST['bezeroa_nif'] ?? ''),
-                'bezeroa_telefonoa' => trim($_POST['bezeroa_telefonoa'] ?? ''),
-                'oharra'            => '' // textarea kenduta; balioa hutsik
+                'bezeroa_telefonoa'=> trim($_POST['bezeroa_telefonoa'] ?? ''),
+                'oharra'            => ''
             ];
-            if ($d['produktu_id'] && Salmenta::create($conn,$d)) $mezua='Salmenta sortua.';
+            if ($d['produktu_id'] && Salmenta::create($conn,$d)) {
+                $mezua='Salmenta sortua.';
+                Seguritatea::logSeguritatea($conn, "SALMENTA_CREATED", "Produktu ID: {$d['produktu_id']}, Kantitatea: {$d['kantitatea']}", $userId);
+            }
             else $errorea='Sortze huts.';
         } elseif ($action==='delete') {
             $id=(int)($_POST['id']??0);
             if ($id) {
                 $row = Salmenta::find($conn,$id);
-                if ($row && ($isAdmin || (int)$row['langile_id']===$userId) && Salmenta::delete($conn,$id)) $mezua='Ezabatua.';
+                if ($row && ($isAdmin || (int)$row['langile_id']===$userId) && Salmenta::delete($conn,$id)) {
+                    $mezua='Ezabatua.';
+                    Seguritatea::logSeguritatea($conn, "SALMENTA_DELETED", "Salmenta ID: {$id}", $userId);
+                }
                 else $errorea='Ezabaketak huts egin du.';
             }
         }
