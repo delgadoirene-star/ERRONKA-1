@@ -44,13 +44,17 @@ RUN printf "%s\n" "error_reporting = E_ALL" "display_errors = On" "log_errors = 
 # Ensure correct permissions for web server user
 RUN chown -R www-data:www-data /var/www/html
 
-# Enable SSL and common modules; remove stray remoteip.conf to avoid startup errors
-RUN a2enmod ssl headers rewrite \
+# Enable SSL and common modules; ensure cache module for SSL; remove stray remoteip
+RUN a2enmod ssl headers rewrite socache_shmcb \
+ && a2dismod remoteip || true \
  && rm -f /etc/apache2/conf-enabled/remoteip.conf /etc/apache2/conf-available/remoteip.conf || true
 
-# Add SSL vhost
+# Add and enable SSL vhost
 COPY ./apache/igai-ssl.conf /etc/apache2/sites-available/igai-ssl.conf
 RUN a2ensite igai-ssl
+
+# Validate Apache config at build time
+RUN apachectl -t
 
 EXPOSE 80
 
