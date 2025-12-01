@@ -1,276 +1,223 @@
-# Zabala Plataforma - IA Programazio Jarraibideak
+# Zabala Platform - AI Coding Guidelines
 
-## Proiektuaren Ikuspegi Orokorra
-Zabala enpresarentzako PHP-n oinarritutako langileen kudeaketa eta salmenta-sistema, **RA5, RA6, RA8** segurtasun-estandarrak betetzen dituena (ASVS oinarritutako autentifikazioa, ahultasunen detekzioa, hedapen segurua).
+Enterprise resource management system in PHP with security compliance (RA5/RA6/RA8 standards). **Critical**: All code uses **Euskara (Basque)** naming—variables, functions, DB columns, comments, UI text.
 
-**Hizkuntza**: Euskara (Batua) aldagai-izenetan, iruzkinetan, UI testuetan, datu-baseko zutabeetan.  
-**Stack**: PHP 8.0+, MySQL 8.0, Docker (Caddy reverse proxy), Hashids liburutegia (4.1+)  
-**Sarrera**: `index.php` → `bootstrap.php` → `router.php` (Hashids kodifikatutako URLak)  
-**Deployment**: Docker Compose 3 zerbitzuekin: `web` (PHP-FPM), `caddy` (HTTP/2), `db` (MySQL 8.0)
+**Tech Stack**: PHP 8.0+, MySQL 8.0, Docker (Caddy reverse proxy), Hashids 4.1+  
+**Request Flow**: `index.php` → `bootstrap.php` → `router.php` (Hashids-encoded URLs) → `views/*.php`  
+**Deployment**: Docker Compose with 3 services (`web`: PHP-FPM, `caddy`: HTTPS proxy, `db`: MySQL 8.0)
 
-## Arkitektura eta Eskaeren Fluxua
+## Core Architecture Patterns
 
-1. **Sarrera-puntua**: Eskaera guztiak `index.php` edo `router.php` fitxategietara iristen dira
-2. **Bootstrap** (`bootstrap.php`): Saioa hasieratzen du `Seguritatea::hasieratuSesioa()` bidez, konfigurazioa kargatzen du, DB konexioa ezartzen du (`$conn`), `$hashids` instantzia globala konfiguratzen du
-3. **Router** (`router.php`): Hashids URLak deskodifikatzen ditu (adib., `/xyz123.php` → `dashboard.php`), orrialde IDak bista-fitxategietara mapeatzen ditu `match()` espresioa erabiliz
-4. **Bistak** (`views/*.php`): `bootstrap.php` inkluditzen dute, beharrezko ereduak kargatu, HTML errendatzen dute PHP integratu batekin
-5. **Ereduak** (`model/*.php`): PHP klase garbiak metodo estatikoekin DB eragiketarako (Usuario, Langilea, Produktua, Salmenta, Seguritatea, Fitxategia)
-6. **Baliabide Publikoak** (`public/assets/`): CSS, irudiak eta fitxategi estatikoak zuzenean zerbitzatuta
-7. **Biltegiratzea** (`storage/`): Egunkari-fitxategiak eta erabiltzaileen igoerak (ez daude publikoki eskuragarri)
+### Bootstrap Initialization (`bootstrap.php`)
+**ALWAYS** include at top of views/scripts. Sets up:
+1. Session via `Seguritatea::hasieratuSesioa()` (secure cookie params)
+2. Config constants (`BASE_URL`, `ASSETS_URL`, `CSRF_TOKEN_LIFETIME`, etc.)
+3. Database connection → `$conn` (mysqli) + `$db_ok` flag (graceful degradation if DB fails)
+4. Hashids instance → `$hashids` (or null if library missing)
+5. Global helpers: `page_link()`, `encode_id()`, `redirect_to()`, `current_user()`
 
-### Key Page ID Mappings (router.php)
+**Critical**: Check `$db_ok` before DB operations—never expose raw SQL errors to users.
+
+### Hashids URL Routing (`router.php`)
+URLs are obfuscated with Hashids (`/a1b2c3d4.php` → page ID 1 → `views/dashboard.php`).
+
+**Page ID mappings** (line 18-27 in router.php):
 ```php
 1 => 'dashboard', 2 => 'langileak', 3 => 'produktuak', 4 => 'salmentak',
-5 => 'nire_salmentak', 6 => 'profile', 7 => 'salmenta_berria', 8 => 'langilea_kudeaketa', 9 => 'home'
+5 => 'nire_salmentak', 6 => 'profile', 7 => 'salmenta_berria', 
+8 => 'langilea_kudeaketa', 9 => 'home'
 ```
-Use `page_link(int $pageId, string $fallback)` helper to generate Hashids URLs.
 
-**Router behavior**:
-- `/` or empty path → `views/home.php`
-- `/{hashid}.php` → Decodes to page ID, maps to view file
-- Invalid/undecodable → Falls through to direct file lookup, then `404.php`
-- Graceful degradation: If Hashids library missing, uses fallback filenames directly
-
-### Hashids Integration
-- **usuario**: id, izena, abizena, nan (DNI/NIF unique), email (unique), user (unique), password (ARGON2ID hash), rol (admin|langilea), aktibo, jaiotegun, iban
-- **langilea**: id, usuario_id (FK CASCADE), departamendua, pozisio, data_kontratazio, soldata, telefonoa, foto
-- **produktua**: id, izena, deskripzioa, kategoria, prezioa, stock, stock_minimo
-- **salmenta**: id, langile_id (FK), produktu_id (FK), kantitatea, prezioa_unitarioa, prezioa_totala (GENERATED/STORED), data_salmenta, bezeroa_izena/nif/telefonoa, oharra
-- **seguritatea_loga**: id, event_type (indexed), event_scope, usuario_id (indexed), ip, created_at, detail (TEXT for RA8 audit logging)
-- **Fallback**: If Hashids unavailable, functions return raw IDs (degrades gracefully)
-
-**Ohiko ereduak:**
+**Usage in views**:
 ```php
-// Esteketan/formularioetan (bistak):
 <a href="<?= page_link(3, 'produktuak') ?>">Produktuak</a>
-
-// Router deskodifikazioa (router.php):
-$decoded = $hashids->decode($page);
-$pageId = $decoded[0] ?? null;
-
-// Entitate IDak kodifikatzea:
-$encoded = encode_id($userId); // Hashids katea edo ID gordina itzultzen du
 ```
 
-## Datu-basearen Eskema (zabala.sql)
-- **usuario**: id, izena, abizena, nan (DNI/NIF unique), email (unique), user (unique, auto-generated from email), password (ARGON2ID hash), rol (admin|langilea), aktibo, jaiotegun, iban, created_at
-- **langilea**: id, usuario_id (FK CASCADE), departamendua, pozisio, data_kontratazio, soldata, telefonoa, foto, created_at
-- **produktua**: id, izena, deskripzioa, kategoria, prezioa, stock, stock_minimo, created_at
-- **salmenta**: id, langile_id (FK), produktu_id (FK), kantitatea, prezioa_unitarioa, prezioa_totala (GENERATED ALWAYS AS computed), data_salmenta, bezeroa_izena/nif/telefonoa, oharra
-- **seguritatea_loga**: id, event_type (indexed), event_scope, usuario_id (indexed), ip, created_at, detail (TEXT for RA8 audit logging)
+**Graceful fallback**: If Hashids unavailable, returns `/produktuak.php` directly.
 
-**Garrantzitsua**: 
-- `salmenta.prezioa_totala` is GENERATED/STORED column—never insert/update directly, MySQL auto-calculates as `kantitatea * prezioa_unitarioa`
-- `usuario.user` is auto-generated from email (part before @) with numeric suffix if duplicates exist—not user-facing in registration form
-
-## Segurtasun Inplementazioa (RA5/RA6/RA8)
-
-### Saio-kudeaketa (`Seguritatea` klasea, `model/seguritatea.php`-n)
-- **Beti** deitu `Seguritatea::hasieratuSesioa()` `$_SESSION` atzitu aurretik (bootstrap-ek globalki egiten du hau)
-- Saioaren time-out: 1800s (30min jarduerarik gabe), ID berregiten du login egiterakoan
-- Cookie ezaugarriak: `httponly=1`, `samesite=Lax`, `secure` (HTTPS soilik)
-
-### CSRF Babesa
+### View File Pattern
+Every view file must follow:
 ```php
-// Token sortu (formulario bat behin errendatzerakoan):
+<?php
+require_once __DIR__ . '/../bootstrap.php';
+require_once __DIR__ . '/../model/usuario.php';
+Seguritatea::egiaztaSesioa(); // Redirect to /index.php if not logged in
+global $db_ok, $conn;
+if (!$db_ok || !$conn) { echo '<div>DB ez dago prest.</div>'; return; }
+
+// Business logic here
+$pageTitle = "Page Name";
+$active = 'menu_item'; // Navbar highlight
+require __DIR__ . '/partials/header.php';
+?>
+<!-- HTML content -->
+<?php require __DIR__ . '/partials/footer.php'; ?>
+```
+
+**Note**: `header.php` auto-sets security headers (CSP, X-Frame-Options). Skip `Seguritatea::egiaztaSesioa()` only for public pages (e.g., `home.php`).
+
+### Model Patterns (Two Styles Coexist)
+**1. Static CRUD methods** (`Langilea`, `Produktua`, `Salmenta`):
+```php
+Langilea::all($conn);           // All employees
+Langilea::find($conn, $id);     // Single employee
+Langilea::create($conn, $data); // Insert
+Langilea::update($conn, $id, $data);
+Langilea::delete($conn, $id);
+```
+
+**2. OOP instance methods** (`Usuario`):
+```php
+$user = new Usuario($email, $password);
+$user->sortu($conn); // Instance method for creation
+Usuario::lortuIdAgatik($conn, $id); // Static getter
+```
+
+**Use either style**—both are valid. For new models, prefer static methods for simplicity unless complex object state is needed.
+
+## Database Critical Rules
+
+### Schema (`zabala.sql`)
+- **`salmenta.prezioa_totala`**: MySQL GENERATED/STORED column (`kantitatea * prezioa_unitarioa`)—**NEVER insert/update directly**, MySQL auto-calculates
+- **`usuario.user`**: Auto-generated from email (part before @) with numeric suffix if duplicate—not user-facing in registration
+- **`usuario.nan`**: Spanish DNI/NIF format (8 digits + letter)—validated in `signin.php`
+
+### Prepared Statements (MANDATORY - RA6 compliance)
+**ALWAYS** use prepared statements—never string interpolation:
+```php
+$stmt = $conn->prepare("SELECT * FROM usuario WHERE email = ?");
+$stmt->bind_param("s", $email);
+$stmt->execute();
+$result = $stmt->get_result()->fetch_assoc();
+$stmt->close();
+```
+
+## Security Implementation (RA5/RA6/RA8)
+
+### CSRF Protection
+```php
+// In form (render once):
 $csrf_token = Seguritatea::generateCSRFToken();
-// POST egiterakoan egiaztatu:
-if (!Seguritatea::verifyCSRFToken($_POST['csrf_token'] ?? '')) { /* baztertu */ }
-```
-Tokenak `CSRF_TOKEN_LIFETIME` (3600s) ondoren iraungitzen dira. Login ondoren berregeneratu.
+echo '<input type="hidden" name="csrf_token" value="' . $csrf_token . '">';
 
-### Pasahitz Baldintzak (RA6)
+// On POST:
+if (!Seguritatea::verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+    die('CSRF token invalid');
+}
+```
+Tokens expire after `CSRF_TOKEN_LIFETIME` (3600s). Regenerate after login.
+
+### Rate Limiting
 ```php
-Seguritatea::balioztaPasahitza($password); 
-// Baldintzak: ≥8 karaktere, maiuskulak, minuskulak, digitua, karaktere berezia
-password_hash($password, PASSWORD_DEFAULT); // ARGON2ID erabiltzen du (PHP 8.0+)
+// Login attempts (max 5):
+if (!Seguritatea::egiaztaLoginIntentoa($email)) {
+    die('Too many attempts');
+}
+// On success:
+Seguritatea::zuritu_login_intentoak($email);
+
+// Generic rate limiting (signup, etc.):
+if (!Seguritatea::egiaztaRateLimit('signup', $email, 3)) {
+    die('Rate limit exceeded');
+}
 ```
 
-### Rate Limiting (Mugatze-tasa)
+### Password Validation (RA6)
 ```php
-Seguritatea::egiaztaLoginIntentoa($email); // Gehienez 5 saiakera
-Seguritatea::zuritu_login_intentoak($email); // Arrakasta izanez gero berrezarri
+Seguritatea::balioztaPasahitza($password);
+// Requirements: ≥8 chars, uppercase, lowercase, digit, special char
+password_hash($password, PASSWORD_DEFAULT); // Uses ARGON2ID (PHP 8.0+)
 ```
 
-### Segurtasun Erregistroa (RA8)
+### Security Audit Logging (RA8)
 ```php
 Seguritatea::logSeguritatea($conn, "LOGIN_EXITOSO", "user@example.com", $userId);
-// seguritatea_loga taulan erregistratzen du IP, denbora-zigilua, gertaeraren xehetasunekin
+// Logs to seguritatea_loga table with IP, timestamp, event details
 
-// CRUD eragiketetarako gertaera mota berriak:
+// Event types for CRUD operations:
 // LANGILEA_CREATED, LANGILEA_UPDATED, LANGILEA_DELETED
 // PRODUKTUA_CREATED, PRODUKTUA_UPDATED, PRODUKTUA_DELETED
 // SALMENTA_CREATED, SALMENTA_DELETED
 // USER_REGISTERED, BOT_SIGNUP_BLOCKED, SIGNUP_RATE_LIMIT
 ```
 
-### File Upload Security
+### File Upload Security (`model/fitxategia.php`)
 ```php
-require_once __DIR__ . '/model/fitxategia.php';
-
-// Handle file upload with validation
 if (isset($_FILES['foto'])) {
     $result = Fitxategia::igoBalioztatuta($_FILES['foto'], 'storage/uploads/fotos');
     if ($result['success']) {
         $fotoPath = $result['path']; // Save to DB
-    } else {
-        $errorea = $result['error']; // Show error to user
     }
 }
-
-// Delete file
-Fitxategia::ezabatu('/storage/uploads/fotos/filename.jpg');
 ```
+**Features**: MIME validation (JPEG/PNG/GIF/WebP), 5MB max, secure random filenames, directory traversal protection.
 
-**Security features:**
-- MIME type validation (JPEG, PNG, GIF, WebP only)
-- File size limit: 5MB max
-- Secure random filename generation
-- Directory traversal protection
-- Script execution prevention in uploads directory
+## Development Workflows
 
-## Konbentzio Kritikoak
-
-### Euskarazko Izendapena
-- Funtzioak: `sortu` (create), `lortu` (get), `aldatu` (update), `ezabatu` (delete), `egiazta` (verify)
-- Aldagaiak: `izena` (name), `abizena` (surname), `bezeroa` (customer), `salmenta` (sale), `langilea` (employee)
-- Mantendu kode berrietan euskarazko terminologia
-
-### Erroreen Kudeaketa
-- **Inoiz ez** agertu DB errore gordinak erabiltzaileei—erregistratu `error_log()` bidez eta mezu generikoak erakutsi
-- Egiaztatu `$db_ok` bandera globala DB eragiketak egin aurretik
-- Degradazio graziosoa: `$conn` null bada, erakutsi "DB ez dago prest" alerta eta itzuli goiz
-
-### Bista Eredua
-```php
-<?php
-require_once __DIR__ . '/../bootstrap.php';
-require_once __DIR__ . '/../model/usuario.php';
-Seguritatea::egiaztaSesioa(); // Saioa hasi gabe badago, signin-era birbideratu
-global $db_ok, $conn;
-if (!$db_ok || !$conn) { /* erakutsi errorea, itzuli */ }
-// ... negozio-logika ...
-$pageTitle = "Orrialde Izena";
-$active = 'menu_item';
-require __DIR__ . '/partials/header.php';
-?>
-<!-- HTML edukia -->
-<?php require __DIR__ . '/partials/footer.php'; ?>
-```
-
-**Garrantzitsua**: 
-- `bootstrap.php` inkluditzeak `$conn`, `$db_ok`, `$hashids` global aldagaiak ezartzen ditu
-- `header.php` automatikoki ezartzen ditu segurtasun-goiburuak (CSP, X-Frame-Options, etab.)
-- `Seguritatea::egiaztaSesioa()` babesgabeko bistetarako deitu (public orrialdeetan ez)
-
-### Prestatutako Kontsultak (Beti)
-```php
-$stmt = $conn->prepare("SELECT * FROM usuario WHERE email = ?");
-$stmt->bind_param("s", $email);
-$stmt->execute();
-$result = $stmt->get_result();
-$user = $result->fetch_assoc();
-$stmt->close();
-```
-**Inoiz ez** erabili kate-interpolazioa SQL-rako (SQLi babesa RA6 arabera).
-
-### Laguntzaile Funtzioak (bootstrap.php-n definituta)
-- `page_link(int $id, string $fallback)`: Hashids URL sortu edo ordezko bidea
-- `encode_id(int $id)`: Hashids katea edo ID gordina itzuli liburutegia falta bada
-- `redirect_to(string $path)`: Header birbideratzea edo JS ordezko modua goiburuak bidali badira
-- `current_user(mysqli $conn)`: Uneko erabiltzaile array lortu `Usuario::lortuIdAgatik()` bidez
-
-## Garapenerako Lan-fluxua
-
-### Tokiko Konfigurazioa (Docker)
-```bash
+### Local Setup (Docker)
+```powershell
 docker compose up --build
-# DB-k zabala.sql automatikoki inportatzen du lehen abiaraztean
-# Atzitzea: http://localhost
+# Auto-imports zabala.sql on first run
+# Access: http://localhost (Caddy auto-redirects to HTTPS)
 ```
 
-### Datu-baseko Aldaketak
-1. Editatu `zabala.sql` (eskemaren aldaketak)
-2. Edukiontzia berreratu edo eskuz inportatu:
-   ```bash
-   docker cp zabala.sql <edukiontzia>:/tmp/zabala.sql
-   docker compose exec db sh -c 'mysql -u root -p"$MYSQL_ROOT_PASSWORD" zabala_db < /tmp/zabala.sql'
-   ```
+### Database Schema Changes
+1. Edit `zabala.sql`
+2. Apply manually:
+```powershell
+docker cp zabala.sql <container-name>:/tmp/zabala.sql
+docker compose exec db sh -c 'mysql -u root -p"$MYSQL_ROOT_PASSWORD" zabala_db < /tmp/zabala.sql'
+```
 
-### Admin Erabiltzailea Sortzea
-Exekutatu `scripts/seed_admin.php` honela:
-```bash
+### Create Admin User
+```powershell
 docker compose exec web php scripts/seed_admin.php
+# Or manually: UPDATE usuario SET rol='admin' WHERE email='user@example.com'
 ```
-Edo eskuz eguneratu DB-a: `UPDATE usuario SET rol='admin' WHERE email='user@example.com'`
 
-### Arazketa (Debugging)
-- Egunkari-fitxategiak: `storage/logs/security.log`, `storage/logs/error.log` (bootstrap-ek automatikoki sortzen ditu)
-- Gaitu display_errors `config/config.php`-n garapenerako (lehenespenez desgaituta)
-- Egiaztatu `$db_ok` bandera DB kontsultak hutsik huts egiten badute
+### Testing (PHPUnit)
+```powershell
+composer install
+docker compose exec db mysql -u root -p"rootpass" < tests/zabala_test.sql
+composer test           # Run all 40 unit tests
+composer test:coverage  # Generate HTML coverage report
+```
 
-## Ohiko Akatsak
+**Test files**: `tests/Unit/{UsuarioTest,SeguritateaTest,LangileaTest,ProduktuaTest}.php`  
+**See**: `TESTING.md` for detailed guide.
 
-1. **bootstrap.php falta**: Beti inkluditu bista/script berrien goialdean
-2. **SQL kontsulta zuzenak**: Erabili prestatutako kontsultak (RA6 betetzea)
-3. **Hash IDak agerian uztea**: Erabili `encode_id()` URL/formularioetan pribatutasunarentzat
-4. **CSRF tokenak saltatu**: POST formulario guztiek tokenak egiaztatu behar dituzte
-5. **Bide gogortuta**: Erabili `BASE_URL`, `ASSETS_URL` konstanteak `config/config.php`-tik
-6. **Ingelesezko izenak kode berrian**: Mantendu euskarazko izendapena (izena, ez name)
-7. **Saioa bootstrap aurretik**: Saioa bootstrap-ek hasieratzen du `Seguritatea::hasieratuSesioa()` bidez
+### Debugging
+- Logs: `storage/logs/security.log`, `storage/logs/error.log` (auto-created by bootstrap)
+- Enable `display_errors` in `config/config.php` (OFF by default)
+- Check `$db_ok` flag if queries fail silently
+- View audit log: `SELECT * FROM seguritatea_loga ORDER BY created_at DESC LIMIT 50;`
 
-## Zaharkitutako Ereduak eta Garbiketarako Gomendioak
+## Euskara Naming Conventions
 
-### ✅ Garbitutako Fitxategiak (2025-11-28)
-- **`style/` karpeta**: EZABATUTA - Edukia `public/assets/` karpetan bikoiztuta zegoen
-- **Bide-erreferentziak**: Eguneratuta `/style/` → `/public/assets/` guztietan
-- **Bootstrap.php**: PHP Intelephense advertentziak konponduta tipo-komentrioekin
+**Functions**: `sortu` (create), `lortu` (get), `aldatu` (update), `ezabatu` (delete), `egiazta` (verify)  
+**Variables**: `izena` (name), `abizena` (surname), `bezeroa` (customer), `salmenta` (sale), `langilea` (employee)  
+**Maintain Euskara terminology in all new code**—never use English equivalents (e.g., `izena`, not `name`).
 
-### Kentzeko Fitxategiak (Zor Teknikoa)
-- **`*.bak` fitxategiak**: Oraingoz ez dago (lehenago garbituta)
-- **`demo/` karpeta**: Oraingoz ez dago (lehenago garbituta)
-- **`views/.htaccess`**: Aztertu ea beharrezkoa den (root-ean ere badago `.htaccess`)
+## Common Pitfalls
 
-### Kodearen Garbiketarako Aukerak
-1. **~~Inconsistent config includes~~**: ✅ KONPONDUTA - Orain `bootstrap.php` kargatu ondoren `config.php` ez da behar
-2. **Mixed error handling**: Estandarizatu try-catch blokeak vs inline egiaztapenak; erabili `$db_ok` bandera modu konsistentean
-3. **~~Hardcoded database name~~**: ✅ KONPONDUTA - Orain `zabala_db` erabiltzen da guztienean
-4. **~~Security headers~~**: ✅ KONPONDUTA - Orain `header.php` eta `.htaccess`-ean ezarrita
-5. **Magic numbers**: Router orrialde IDak (1-9) konstanteak gisa definitu mantengarritasunerako
-6. **Null coalescing chains**: Sinplifikatu habiaratutako `?? ''` ereduak lehen balioztapenarekin
-7. **~~CSS path inconsistency~~**: ✅ KONPONDUTA - Orain `/public/assets/style.css` erabiltzen da leku guztietan
+1. **Missing bootstrap.php**: Include at top of every view/script
+2. **Direct SQL queries**: Use prepared statements (RA6 compliance)
+3. **Exposing hash IDs**: Use `encode_id()` in URLs/forms for privacy
+4. **Skipping CSRF tokens**: All POST forms must verify tokens
+5. **Hardcoded paths**: Use `BASE_URL`, `ASSETS_URL` from `config/config.php`
+6. **English naming**: Maintain Euskara (`izena`, not `name`)
+7. **Session before bootstrap**: Session initialized by bootstrap via `Seguritatea::hasieratuSesioa()`
+8. **Updating `salmenta.prezioa_totala`**: Never insert/update—MySQL auto-calculates as GENERATED column
 
-### Security Improvements Implemented
-1. **SQL Injection Fixed**: `dashboard.php` now uses prepared statements for user-specific queries
-2. **NAN Validation**: `signin.php` validates Spanish DNI/NIF format (8 digits + letter)
-3. **Missing Auth Checks**: Added session validation to `produktuak.php`
-4. **Security Headers**: CSP and security headers now set in `header.php` and `.htaccess`
-5. **Database Connection**: Created `config/konexioa.php` with secure error handling
-6. **Production Hardening**: Removed `display_errors` from `signin.php`
-7. **Rate Limiting Enhanced**: Generic rate limiting added for signup and other actions (max 3-5 attempts per 15min)
-8. **Honeypot Bot Detection**: Invisible field in signup form blocks automated bot registrations
-9. **HTTPS Enforcement**: `.htaccess` forces HTTPS redirects and prevents HTTP access
-10. **File Upload Security**: Created `model/fitxategia.php` with MIME validation, size limits (5MB), secure filename generation
-11. **Comprehensive Audit Logging**: All CRUD operations (create/update/delete) now logged to `seguritatea_loga` table
-12. **Demo Files Removed**: Deleted `demo/` folder and `.bak` files for production readiness
+## Adding New Features
 
-### Recommended Refactors (Low Priority)
-- Extract `Seguritatea::logSeguritatea()` calls into a dedicated logging service class
-- Create a `Response` helper class for consistent JSON/redirect responses
-- Add database migration system (currently raw SQL imports)
-- Implement autoloading for models (replace manual `require_once` chains)
-- Add input sanitization helper for common patterns (trim + validation)
-- Create DTO/Value Objects for complex data structures (Usuario, Langilea)
+### New View Page
+1. Create `views/orrialde_berria.php` with bootstrap include
+2. Add entry in `router.php` match expression with new page ID
+3. Update navbar in `views/partials/navbar.php` if needed
+4. Use `page_link(newPageID, 'orrialde_berria')` in links
 
-## Eginbide Berriak Gehitzea
-
-### Bista Orrialde Berria
-1. Sortu `views/orrialde_berria.php` bootstrap inkluzioarekin
-2. Gehitu sarrera `router.php` match adierazpenean orrialde ID berriarekin
-3. Eguneratu navbar `views/partials/navbar.php`-n behar izanez gero
-4. Erabili `page_link(orrialdeBerriID, 'orrialde_berria')` esteketan
-
-### Eredu Berria
+### New Model
 ```php
 <?php
 class NireEredua {
@@ -281,18 +228,30 @@ class NireEredua {
     }
 }
 ```
-Beti onartu `$conn` lehen parametro gisa, egiaztatu null den, erabili prestatutako kontsultak.
+Always accept `$conn` as first param, check if null, use prepared statements.
 
-**Eredu eredu biak existitzen dira**:
-1. **Klase-oinarritua** (`Usuario`): OOP metodoak objektuak kudeatzeko
-2. **Metodo estatikoak** (`Langilea`, `Produktua`, `Salmenta`): Statikoak CRUD operazioetarako (all, find, create, update, delete)
+### AJAX Endpoints
+- Return JSON: `header('Content-Type: application/json'); echo json_encode($data);`
+- Verify CSRF token even for GET requests if state-changing
+- Log security events with `Seguritatea::logSeguritatea()`
 
-Eredu berriek bi estiloak ere erabil ditzakete. CRUD operazio erraza metodo estatikoekin (`Langilea::all($conn)`), konplexuagoak objektu-instantziekin.
+## Technical Debt & Cleanup
 
-### AJAX Amaiera-puntuak
-- Itzuli JSON `header('Content-Type: application/json'); echo json_encode($data);` bidez
-- Egiaztatu CSRF tokena GET-entzat ere egoera aldatzen badu
-- Erregistratu segurtasun-gertaerak `Seguritatea::logSeguritatea()` bidez
+### ✅ Fixed (2025-11-28+)
+- `/style/` folder removed (duplicated in `/public/assets/`)
+- Path references updated to `/public/assets/style.css`
+- Inconsistent config includes (bootstrap now loads config)
+- Security headers (now in `header.php` + `.htaccess`)
+- SQL injection in dashboard (prepared statements)
+- HTTPS enforcement (`.htaccess` + Caddy)
 
-## Proba Kredentzialak
-Ikusi `README.md` erabiltzaile-adibidea—normalean `signin.php` erregistro-fluxuaren bidez sortzen da. Lehenetsi admin-ik ez dago; eskuz sustatu behar da DB-an.
+### Recommended Refactors (Low Priority)
+- Extract `Seguritatea::logSeguritatea()` calls into logging service
+- Create `Response` helper class for JSON/redirect patterns
+- Add database migration system (currently raw SQL imports)
+- Implement autoloading for models (replace manual `require_once`)
+- Define router page IDs as constants (avoid magic numbers 1-9)
+
+---
+
+**Documentation**: See `README.md` for installation, `TESTING.md` for test suite, `docs/PENTESTING_TXOSTENA.md` for security audit results.
