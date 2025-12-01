@@ -33,7 +33,7 @@ if ($page === '' || $page === 'router' || $page === 'home') {
     exit;
 }
 
-if (strpos($base, '.') === false || substr($base, '-4') === '.php') {
+if (strpos($base, '.') === false || substr($base, -4) === '.php') {
     $decoded = $hashids->decode($page);
     if ($decoded && isset($decoded[0])) {
         $pageId = (int)$decoded[0];
