@@ -33,7 +33,7 @@ if ($page === '' || $page === 'router' || $page === 'home') {
     exit;
 }
 
-if (strpos($base, '.') === false || substr($base, -4) === '.php') {
+if (strpos($base, '.') === false || substr($base, '-4') === '.php') {
     $decoded = $hashids->decode($page);
     if ($decoded && isset($decoded[0])) {
         $pageId = (int)$decoded[0];
@@ -47,6 +47,11 @@ if (strpos($base, '.') === false || substr($base, -4) === '.php') {
             7 => 'salmenta_berria',
             8 => 'langilea_kudeaketa',
             9 => 'home',
+            10 => 'denda',
+            11 => 'saskia',
+            12 => 'checkout',
+            13 => 'denda-login',
+            14 => 'denda-erregistratu',
             default => 'home'
         };
         include "views/{$realPage}.php";
