@@ -40,7 +40,8 @@ class ProduktuaTest extends TestCase
             'kategoria' => 'Test Kategoria',
             'prezioa' => 19.99,
             'stock' => 100,
-            'stock_minimo' => 10
+            'stock_minimo' => 10,
+            'irudia' => ''
         ];
         
         $result = \Produktua::create(self::$conn, $data);
@@ -69,7 +70,8 @@ class ProduktuaTest extends TestCase
             'kategoria' => 'Cat 1',
             'prezioa' => 10.00,
             'stock' => 50,
-            'stock_minimo' => 5
+            'stock_minimo' => 5,
+            'irudia' => ''
         ]);
         
         \Produktua::create(self::$conn, [
@@ -78,7 +80,8 @@ class ProduktuaTest extends TestCase
             'kategoria' => 'Cat 2',
             'prezioa' => 20.00,
             'stock' => 30,
-            'stock_minimo' => 3
+            'stock_minimo' => 3,
+            'irudia' => ''
         ]);
         
         $produktuak = \Produktua::all(self::$conn);
@@ -95,7 +98,8 @@ class ProduktuaTest extends TestCase
             'kategoria' => 'Findable',
             'prezioa' => 15.50,
             'stock' => 25,
-            'stock_minimo' => 2
+            'stock_minimo' => 2,
+            'irudia' => ''
         ]);
         
         // Get the created product ID
@@ -122,7 +126,8 @@ class ProduktuaTest extends TestCase
             'kategoria' => 'Original Cat',
             'prezioa' => 25.00,
             'stock' => 40,
-            'stock_minimo' => 4
+            'stock_minimo' => 4,
+            'irudia' => ''
         ]);
         
         // Get ID
@@ -141,7 +146,8 @@ class ProduktuaTest extends TestCase
             'kategoria' => 'Updated Cat',
             'prezioa' => 30.00,
             'stock' => 60,
-            'stock_minimo' => 6
+            'stock_minimo' => 6,
+            'irudia' => ''
         ];
         
         $result = \Produktua::update(self::$conn, $produktuId, $updateData);
@@ -163,7 +169,8 @@ class ProduktuaTest extends TestCase
             'kategoria' => 'Temp',
             'prezioa' => 5.00,
             'stock' => 10,
-            'stock_minimo' => 1
+            'stock_minimo' => 1,
+            'irudia' => ''
         ]);
         
         // Get ID
@@ -193,7 +200,8 @@ class ProduktuaTest extends TestCase
             'kategoria' => 'Stock',
             'prezioa' => 12.00,
             'stock' => 15,
-            'stock_minimo' => 10
+            'stock_minimo' => 10,
+            'irudia' => ''
         ]);
         
         $stmt = self::$conn->prepare("SELECT * FROM produktua WHERE izena = ?");
@@ -213,7 +221,8 @@ class ProduktuaTest extends TestCase
             'kategoria' => 'Stock',
             'prezioa' => 12.00,
             'stock' => 5,
-            'stock_minimo' => 10
+            'stock_minimo' => 10,
+            'irudia' => ''
         ]);
         
         $updated = \Produktua::find(self::$conn, $produktua['id']);
